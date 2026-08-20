@@ -275,6 +275,13 @@ final class DisplayManagerViewModel {
     /// equivalent button — this is just another entry point, not a shadow
     /// execution path.
     func execute(urlCommand command: URLCommand) {
+        // ColorSyncUnregisterDevice -> AuthorizationCreate hace XPC sincronico que se
+        // deadlockea dentro del handler de Apple Events (GURL). Diferir el comando al
+        // siguiente ciclo del runloop para ejecutarlo fuera de ese contexto.
+        DispatchQueue.main.async { self.executeNow(urlCommand: command) }
+    }
+
+    private func executeNow(urlCommand command: URLCommand) {
         switch command {
         case .open:
             navigate(to: .displayList)
@@ -299,11 +306,40 @@ final class DisplayManagerViewModel {
             removeVirtualDisplay(display)
 
         case .remove(.name(let name)):
-            guard let display = displays.first(where: { $0.isVirtual && $0.name == name }) else {
-                errorMessage = t("unknown_virtual_display_name", name as CVarArg)
+            // remotedesk: matching robusto — por displays activos O por el mapa de nombres
+            if let display = displays.first(where: { $0.isVirtual && $0.name == name }) {
+                removeVirtualDisplay(display)
+            } else {
+                let ids = virtualDisplayNames.filter { $0.value == name }.map { $0.key }
+                if ids.isEmpty {
+                    errorMessage = t("unknown_virtual_display_name", name as CVarArg)
+                    return
+                }
+                for id in ids {
+                    virtualService.removeVirtualDisplay(id: id)
+                    virtualDisplayIDs.remove(id)
+                    virtualDisplayNames.removeValue(forKey: id)
+                }
+                refresh()
+            }
+
+        case .setEnabled(let target, let enabled):
+            refresh()
+            let match: DisplayInfo?
+            switch target {
+            case .id(let rawID): match = displays.first { $0.id == CGDirectDisplayID(rawID) }
+            case .name(let name): match = displays.first { $0.name == name }
+            }
+            guard let display = match else {
+                errorMessage = "No display matches \(String(describing: target))"
                 return
             }
-            removeVirtualDisplay(display)
+            if display.isActive != enabled {
+                toggleDisplay(display)
+            }
+
+        case .status:
+            writeStatusSnapshot()
 
         case .reconfigure(let rawID, let request):
             let id = CGDirectDisplayID(rawID)
@@ -321,6 +357,28 @@ final class DisplayManagerViewModel {
                 hiDPI: request.hiDPI,
                 name: explicitName
             )
+        }
+    }
+
+    /// Snapshot of every display for remote controllers. Written to a fixed
+    /// path so an SSH caller can `open simpledisplay://status` and read it.
+    private func writeStatusSnapshot() {
+        refresh()
+        let items: [[String: Any]] = displays.map { d in
+            [
+                "id": Int(d.id),
+                "name": d.name,
+                "virtual": d.isVirtual,
+                "on": d.isActive,
+                "main": d.isMain,
+                "builtin": d.isBuiltIn,
+                "width": d.currentMode.width,
+                "height": d.currentMode.height,
+                "hidpi": d.currentMode.isHiDPI,
+            ]
+        }
+        if let data = try? JSONSerialization.data(withJSONObject: items, options: [.sortedKeys]) {
+            try? data.write(to: URL(fileURLWithPath: "/tmp/simpledisplay-status.json"))
         }
     }
 

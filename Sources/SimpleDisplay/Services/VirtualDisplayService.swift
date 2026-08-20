@@ -201,10 +201,10 @@ final class VirtualDisplayService {
         let name = displayConfigMap[id].flatMap { configID in
             loadConfigs().first { $0.configID == configID }?.name
         }
-        // Clean up ColorSync state BEFORE invalidating — the display must still
-        // be alive for CGDisplayCreateUUIDFromDisplayID to resolve the UUID.
-        unregisterColorSyncDevice(for: id)
-        removeICCProfile(for: id)
+        // Resolve the UUID while the display is alive, then clean up ColorSync in the
+        // background: ColorSyncUnregisterDevice -> AuthorizationCreate does synchronous
+        // XPC that can hang forever and froze the whole app (seen on macOS 26).
+        scheduleColorSyncCleanup(for: id)
         if let wrapper = activeDisplays.removeValue(forKey: id) {
             wrapper.invalidate()
         }
@@ -214,13 +214,32 @@ final class VirtualDisplayService {
 
     func removeAll() {
         for (id, wrapper) in activeDisplays {
-            unregisterColorSyncDevice(for: id)
-            removeICCProfile(for: id)
+            scheduleColorSyncCleanup(for: id)
             wrapper.invalidate()
         }
         activeDisplays.removeAll()
         displayConfigMap.removeAll()
         clearConfigs()
+    }
+
+
+    /// ColorSync cleanup off the main thread, and WITHOUT ColorSyncUnregisterDevice:
+    /// that call requires admin authorization (AuthorizationCreate over synchronous
+    /// XPC), which froze the app when no one could answer the prompt and queues a
+    /// password dialog on every removal otherwise. A ghost registry entry is the
+    /// lesser evil; `fixColorProfiles` remains the recovery path if they pile up.
+    /// Root-owned ICC files are also left behind (no osascript prompt).
+    private func scheduleColorSyncCleanup(for displayID: CGDirectDisplayID) {
+        guard let cfUUID = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue() else { return }
+        let uuidString = CFUUIDCreateString(nil, cfUUID) as String
+        DispatchQueue.global(qos: .utility).async {
+            let profilesDir = "/Library/ColorSync/Profiles/Displays"
+            if let files = try? FileManager.default.contentsOfDirectory(atPath: profilesDir) {
+                for file in files where file.hasSuffix(".icc") && file.contains(uuidString) {
+                    try? FileManager.default.removeItem(atPath: "\(profilesDir)/\(file)")
+                }
+            }
+        }
     }
 
     var activeVirtualDisplayIDs: Set<CGDirectDisplayID> {
@@ -347,7 +366,7 @@ final class VirtualDisplayService {
     private func pruneTerminatedDisplays() {
         let toRemove = activeDisplays.filter { $0.value.displayID == 0 }
         for (id, _) in toRemove {
-            unregisterColorSyncDevice(for: id)
+            scheduleColorSyncCleanup(for: id)
             activeDisplays.removeValue(forKey: id)
             displayConfigMap.removeValue(forKey: id)
             onDisplayTerminated?(id)

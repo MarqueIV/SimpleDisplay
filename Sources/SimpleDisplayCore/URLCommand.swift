@@ -7,6 +7,11 @@ public enum URLCommand: Equatable, Sendable {
     case create(VirtualDisplayRequest)
     case remove(RemoveTarget)
     case reconfigure(id: UInt32, request: VirtualDisplayRequest)
+    /// Enable or disable an existing display (by id or name), idempotently.
+    case setEnabled(target: RemoveTarget, enabled: Bool)
+    /// Dump the current display list as JSON to /tmp/simpledisplay-status.json
+    /// so remote controllers (SSH + open) can read machine-readable state.
+    case status
     case open
 }
 
@@ -28,7 +33,7 @@ public enum URLCommandError: Error, Equatable, Sendable, CustomStringConvertible
         case .wrongScheme(let found):
             return "expected scheme 'simpledisplay', got '\(found ?? "<none>")'"
         case .unknownHost(let host):
-            return "unknown action '\(host)' — expected create/remove/reconfigure/open"
+            return "unknown action '\(host)' — expected create/remove/reconfigure/enable/disable/status/open"
         case .missingHost:
             return "URL has no action (expected simpledisplay://<action>)"
         case .missingParameter(let name):
@@ -65,6 +70,12 @@ public enum URLCommandParser {
             return parseRemove(params)
         case "reconfigure":
             return parseReconfigure(params)
+        case "enable":
+            return parseTarget(params).map { .setEnabled(target: $0, enabled: true) }
+        case "disable":
+            return parseTarget(params).map { .setEnabled(target: $0, enabled: false) }
+        case "status":
+            return .success(.status)
         case "open":
             return .success(.open)
         default:
@@ -79,21 +90,26 @@ public enum URLCommandParser {
     }
 
     private static func parseRemove(_ p: Params) -> Result<URLCommand, URLCommandError> {
+        parseTarget(p).map(URLCommand.remove)
+    }
+
+    /// Shared id-XOR-name display target used by remove/enable/disable.
+    private static func parseTarget(_ p: Params) -> Result<RemoveTarget, URLCommandError> {
         let hasID = p.value("id") != nil
         let hasName = p.value("name") != nil
         switch (hasID, hasName) {
         case (true, true):
-            return .failure(.conflictingParameters("remove accepts either 'id' or 'name', not both"))
+            return .failure(.conflictingParameters("accepts either 'id' or 'name', not both"))
         case (false, false):
             return .failure(.missingParameter("id-or-name"))
         case (true, _):
             switch p.requireUInt32("id") {
-            case .success(let id): return .success(.remove(.id(id)))
+            case .success(let id): return .success(.id(id))
             case .failure(let e): return .failure(e)
             }
         case (_, true):
             switch p.requireName("name") {
-            case .success(let name): return .success(.remove(.name(name)))
+            case .success(let name): return .success(.name(name))
             case .failure(let e): return .failure(e)
             }
         }
@@ -262,6 +278,16 @@ extension URLCommand {
         case .reconfigure(let id, let req):
             components.host = "reconfigure"
             components.queryItems = [URLQueryItem(name: "id", value: String(id))] + requestQueryItems(req)
+        case .setEnabled(let target, let enabled):
+            components.host = enabled ? "enable" : "disable"
+            switch target {
+            case .id(let id):
+                components.queryItems = [URLQueryItem(name: "id", value: String(id))]
+            case .name(let name):
+                components.queryItems = [URLQueryItem(name: "name", value: name)]
+            }
+        case .status:
+            components.host = "status"
         case .open:
             components.host = "open"
         }
