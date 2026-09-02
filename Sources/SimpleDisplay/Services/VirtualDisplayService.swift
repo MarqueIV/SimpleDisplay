@@ -13,6 +13,33 @@ final class VirtualDisplayService {
     private var displayConfigMap: [CGDirectDisplayID: UUID] = [:]
     var onDisplayTerminated: ((CGDirectDisplayID) -> Void)?
 
+    // MARK: - Stable serial numbers (the real ColorSync fix)
+    //
+    // ColorSync identifies a display by vendorID/productID/serialNumber. With a
+    // RANDOM serial every CGVirtualDisplay is a brand-new device: macOS generates a
+    // fresh .icc in /Library/ColorSync/Profiles/Displays (root-owned, we can't
+    // delete it) and re-validates the growing pile forever — that is the
+    // colorsyncd/displayservices CPU loop and the "56 profiles after 100 displays"
+    // leak. Reusing a small pool of STABLE serials (lowest free slot) makes the
+    // Nth virtual display always the same device, so macOS reuses its profile:
+    // the profile count is bounded by the max number of simultaneous displays.
+    private var usedSerials: Set<UInt32> = []
+    private var serialByDisplay: [CGDirectDisplayID: UInt32] = [:]
+    private static let maxSerialSlots: UInt32 = 4095
+
+    private func allocateSerial() -> UInt32 {
+        var serial: UInt32 = 1
+        while usedSerials.contains(serial) && serial < Self.maxSerialSlots { serial += 1 }
+        usedSerials.insert(serial)
+        return serial
+    }
+
+    private func releaseSerial(for displayID: CGDirectDisplayID) {
+        if let serial = serialByDisplay.removeValue(forKey: displayID) {
+            usedSerials.remove(serial)
+        }
+    }
+
     private let persistenceKey = "com.simpledisplay.virtualDisplays"
 
     // MARK: - Config
@@ -101,7 +128,8 @@ final class VirtualDisplayService {
 
     @discardableResult
     func createVirtualDisplay(config: VirtualDisplayConfig, persist: Bool = true) throws -> CGDirectDisplayID {
-        let serial = UInt32.random(in: 1...UInt32.max)
+        // Stable per-slot serial (see `allocateSerial`), never random.
+        let serial = allocateSerial()
 
         // Use large maxPixels so we can reconfigure later without recreating
         let maxW: UInt = 8192
@@ -124,6 +152,7 @@ final class VirtualDisplayService {
         )
 
         guard let wrapper, wrapper.displayID != 0 else {
+            usedSerials.remove(serial)
             throw DisplayError.virtualDisplayUnavailable(
                 "CGVirtualDisplay creation failed. This may require the app to be signed " +
                 "with the virtual-display-service entitlement, or may not be supported on this system."
@@ -142,13 +171,15 @@ final class VirtualDisplayService {
             hiDPI: config.hiDPI
         )
         guard applied else {
+            wrapper.invalidate()
+            usedSerials.remove(serial)
             throw DisplayError.virtualDisplayUnavailable("Failed to apply initial display settings.")
         }
 
         activeDisplays[displayID] = wrapper
         displayConfigMap[displayID] = config.configID
+        serialByDisplay[displayID] = serial
 
-        // Assign sRGB profile to reduce colorsync CPU churn
         assignSRGBProfile(to: displayID)
 
         if persist {
@@ -201,45 +232,30 @@ final class VirtualDisplayService {
         let name = displayConfigMap[id].flatMap { configID in
             loadConfigs().first { $0.configID == configID }?.name
         }
-        // Resolve the UUID while the display is alive, then clean up ColorSync in the
-        // background: ColorSyncUnregisterDevice -> AuthorizationCreate does synchronous
-        // XPC that can hang forever and froze the whole app (seen on macOS 26).
-        scheduleColorSyncCleanup(for: id)
+        // No ColorSync cleanup on purpose:
+        // - ColorSyncUnregisterDevice -> AuthorizationCreate does synchronous XPC that
+        //   can hang forever and froze the whole app (seen on macOS 26), and queues a
+        //   password dialog otherwise.
+        // - Deleting the display's .icc (root-owned anyway) only forces macOS to
+        //   regenerate it on the next create. With stable serials (`allocateSerial`)
+        //   the same slot reuses the same profile, so nothing accumulates.
         if let wrapper = activeDisplays.removeValue(forKey: id) {
             wrapper.invalidate()
         }
+        releaseSerial(for: id)
         removeConfigMatching(id: id)
         logger.info("Removed virtual display\(name.map { " '\($0)'" } ?? "") (ID \(id))")
     }
 
     func removeAll() {
-        for (id, wrapper) in activeDisplays {
-            scheduleColorSyncCleanup(for: id)
+        for wrapper in activeDisplays.values {
             wrapper.invalidate()
         }
         activeDisplays.removeAll()
         displayConfigMap.removeAll()
+        usedSerials.removeAll()
+        serialByDisplay.removeAll()
         clearConfigs()
-    }
-
-
-    /// ColorSync cleanup off the main thread, and WITHOUT ColorSyncUnregisterDevice:
-    /// that call requires admin authorization (AuthorizationCreate over synchronous
-    /// XPC), which froze the app when no one could answer the prompt and queues a
-    /// password dialog on every removal otherwise. A ghost registry entry is the
-    /// lesser evil; `fixColorProfiles` remains the recovery path if they pile up.
-    /// Root-owned ICC files are also left behind (no osascript prompt).
-    private func scheduleColorSyncCleanup(for displayID: CGDirectDisplayID) {
-        guard let cfUUID = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue() else { return }
-        let uuidString = CFUUIDCreateString(nil, cfUUID) as String
-        DispatchQueue.global(qos: .utility).async {
-            let profilesDir = "/Library/ColorSync/Profiles/Displays"
-            if let files = try? FileManager.default.contentsOfDirectory(atPath: profilesDir) {
-                for file in files where file.hasSuffix(".icc") && file.contains(uuidString) {
-                    try? FileManager.default.removeItem(atPath: "\(profilesDir)/\(file)")
-                }
-            }
-        }
     }
 
     var activeVirtualDisplayIDs: Set<CGDirectDisplayID> {
@@ -248,20 +264,9 @@ final class VirtualDisplayService {
 
     // MARK: - Color Profile
 
-    /// Unregister a virtual display from the ColorSync device registry.
-    /// Without this, removed displays leave ghost entries in the registry
-    /// that accumulate over time and cause ColorSync daemons to loop.
-    private func unregisterColorSyncDevice(for displayID: CGDirectDisplayID) {
-        guard let cfUUID = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue() else { return }
-        guard let deviceClass = kColorSyncDisplayDeviceClass?.takeUnretainedValue() else { return }
-        if ColorSyncUnregisterDevice(deviceClass, cfUUID) {
-            logger.info("Unregistered ColorSync device for display \(displayID)")
-        }
-    }
-
-    /// Assign sRGB profile to a virtual display to prevent colorsync CPU loop.
-    /// macOS generates custom profiles for virtual displays and continuously validates them,
-    /// causing high CPU. Assigning a known system profile (sRGB) stops this.
+    /// Pin sRGB as the display's profile. Harmless and cheap; the real fix for the
+    /// colorsyncd/displayservices CPU loop is the stable serial (see `allocateSerial`):
+    /// sRGB alone did not stop the leak when tested with random serials.
     private func assignSRGBProfile(to displayID: CGDirectDisplayID) {
         guard let uuid = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue() else { return }
         guard let profileKey = kColorSyncDeviceDefaultProfileID?.takeUnretainedValue() else { return }
@@ -279,48 +284,6 @@ final class VirtualDisplayService {
             uuid,
             profileInfo as CFDictionary
         )
-    }
-
-    /// Remove orphaned ICC profile for a virtual display.
-    /// Files in /Library/ColorSync/Profiles/Displays are owned by root,
-    /// so we first try without privileges, then escalate via osascript if needed.
-    private func removeICCProfile(for displayID: CGDirectDisplayID) {
-        let profilesDir = "/Library/ColorSync/Profiles/Displays"
-        guard let cfUUID = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue() else { return }
-        let uuidString = CFUUIDCreateString(nil, cfUUID) as String? ?? ""
-        guard !uuidString.isEmpty else { return }
-
-        guard let files = try? FileManager.default.contentsOfDirectory(atPath: profilesDir) else { return }
-        var pathsToRemove: [String] = []
-        for file in files where file.hasSuffix(".icc") && file.contains(uuidString) {
-            pathsToRemove.append("\(profilesDir)/\(file)")
-        }
-        guard !pathsToRemove.isEmpty else { return }
-
-        // Try unprivileged removal first
-        var needsEscalation: [String] = []
-        for path in pathsToRemove {
-            do {
-                try FileManager.default.removeItem(atPath: path)
-                logger.info("Cleaned up ICC profile: \(path)")
-            } catch {
-                needsEscalation.append(path)
-            }
-        }
-
-        guard !needsEscalation.isEmpty else { return }
-
-        // Escalate to root via osascript — shows the standard macOS password dialog
-        let escaped = needsEscalation.map { "\\\"" + $0 + "\\\"" }.joined(separator: " ")
-        let script = "do shell script \"rm -f \(escaped)\" with administrator privileges"
-        guard let appleScript = NSAppleScript(source: script) else { return }
-        var error: NSDictionary?
-        appleScript.executeAndReturnError(&error)
-        if let error {
-            logger.warning("Failed to remove ICC profiles with admin privileges: \(error)")
-        } else {
-            logger.info("Removed \(needsEscalation.count) ICC profile(s) with admin privileges")
-        }
     }
 
     // MARK: - Persistence
@@ -366,9 +329,9 @@ final class VirtualDisplayService {
     private func pruneTerminatedDisplays() {
         let toRemove = activeDisplays.filter { $0.value.displayID == 0 }
         for (id, _) in toRemove {
-            scheduleColorSyncCleanup(for: id)
             activeDisplays.removeValue(forKey: id)
             displayConfigMap.removeValue(forKey: id)
+            releaseSerial(for: id)
             onDisplayTerminated?(id)
         }
     }
