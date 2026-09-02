@@ -1,0 +1,16 @@
+[18:56:06] == DESPUES (serial estable, build con fix) == N=100 ip=192.168.64.9
+[18:56:06] BASELINE ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=71
+[18:56:11] ciclo 1/100 ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=71
+[18:56:51] ciclo 10/100 ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=72
+[18:57:35] ciclo 20/100 ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=72
+[18:58:19] ciclo 30/100 ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=72
+[18:59:04] ciclo 40/100 ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=73
+[18:59:48] ciclo 50/100 ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=73
+[19:00:32] ciclo 60/100 ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=73
+[19:01:13] ciclo 70/100 ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=74
+[19:01:57] ciclo 80/100 ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=71
+[19:02:41] ciclo 90/100 ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=71
+[19:03:26] ciclo 100/100 ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=71
+[19:03:29] FINAL ICC=2 CPU_colorsync=0 DISPLAYS=? RSS_app_MB=71
+[19:03:29] ICC files: Apple Virtual-9A0911C6-7B3D-4140-93FB-DE91CCE602DB.icc stress1-571D422E-1D6C-46E3-A7AB-7E3F7A407C64.icc 
+[19:03:50] CPU sostenida (5 muestras x 2s):  CPU sostenida (5 muestras x 2s): 
