@@ -24,8 +24,9 @@
 - **Set main display** — change your primary monitor from the menu bar
 - **HiDPI support** — create Retina virtual displays
 - **Sleep/Wake safe** — automatically handles display state across sleep cycles
-- **ColorSync fix** — prevents colorsync deadlock with identical monitors (macOS Sequoia bug)
-- **Lightweight** — lives in the menu bar, under 2MB, no background processes
+- **ColorSync fix** — prevents the colorsync deadlock with identical monitors (macOS Sequoia bug) and gives virtual displays a stable identity so they don't leak ICC profiles or keep colorsyncd busy
+- **Automation** — `simpledisplay://` URL scheme and `simpledisplayctl` CLI for scripts, Shortcuts, and SSH
+- **Lightweight** — lives in the menu bar, under 2 MB to download, no background processes
 
 ## Install
 
@@ -53,7 +54,7 @@ Since SimpleDisplay uses private APIs and isn't notarized, macOS will block it o
 git clone https://github.com/SamuelRioTz/SimpleDisplay.git
 cd SimpleDisplay
 make dmg
-open SimpleDisplay.app
+open .build/SimpleDisplay.app
 
 # Optional: install the CLI for automation
 make cli-install          # /usr/local/bin/simpledisplayctl
@@ -76,6 +77,9 @@ is no separate background process to keep alive.
 | `simpledisplay://create?width=N&height=N[&name=S][&refresh=N][&hidpi=true]` | Create a virtual display.           |
 | `simpledisplay://remove?id=N` or `?name=S`                              | Remove a virtual display.           |
 | `simpledisplay://reconfigure?id=N&width=N&height=N[&refresh=N][&hidpi=true]` | Resize a virtual display in place. |
+| `simpledisplay://enable?id=N` or `?name=S`                              | Turn a display back on.             |
+| `simpledisplay://disable?id=N` or `?name=S`                             | Turn a display off (mirrors it).    |
+| `simpledisplay://status`                                                | Write the display list as JSON to `/tmp/simpledisplay-status.json`. |
 
 Values are validated — dimensions clamp to 100–8192, refresh capped at 60 Hz,
 names rejected if they contain control characters — before the app sees them.

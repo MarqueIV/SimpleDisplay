@@ -4,7 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SimpleDisplay — Open-source display management for macOS</title>
-    <meta name="description" content="Free, open-source macOS menu bar app for managing displays and creating virtual monitors. Lightweight, under 2 MB.">
+    <meta name="description" content="Free, open-source macOS menu bar app for managing displays and creating virtual monitors. Under 2 MB to download, scriptable from the terminal.">
+    <link rel="canonical" href="https://simpledisplay.app/">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://simpledisplay.app/">
+    <meta property="og:site_name" content="SimpleDisplay">
+    <meta property="og:title" content="SimpleDisplay — Open-source display management for macOS">
+    <meta property="og:description" content="Free, open-source macOS menu bar app for managing displays and creating virtual monitors. Under 2 MB to download, scriptable from the terminal.">
+    <meta property="og:image" content="https://simpledisplay.app/assets/logo.png">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta property="og:image:alt" content="SimpleDisplay logo">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="SimpleDisplay — Open-source display management for macOS">
+    <meta name="twitter:description" content="Free, open-source macOS menu bar app for managing displays and creating virtual monitors. Under 2 MB to download, scriptable from the terminal.">
+    <meta name="twitter:image" content="https://simpledisplay.app/assets/logo.png">
     <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <style>
@@ -289,6 +303,7 @@
         <div class="nav-links">
             <a href="#features" data-i18n="nav_features">Features</a>
             <a href="#how-it-works" data-i18n="nav_how">How it works</a>
+            <a href="#automation" data-i18n="nav_auto">Automation</a>
             <a href="#get-started" data-i18n="nav_start">Get started</a>
             <a href="https://github.com/SamuelRioTz/SimpleDisplay" class="btn btn-ghost nav-github">
                 <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
@@ -326,7 +341,7 @@
         <div class="stats-grid">
             <div class="stat">
                 <div class="stat-value" data-i18n="stat_size">&lt; 2 MB</div>
-                <div class="stat-label" data-i18n="stat_size_label">App size</div>
+                <div class="stat-label" data-i18n="stat_size_label">Download size</div>
             </div>
             <div class="stat">
                 <div class="stat-value" data-i18n="stat_license">GPL-3.0</div>
@@ -386,7 +401,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
                 <h3 data-i18n="feat_color_title">ColorSync Fix</h3>
-                <p data-i18n="feat_color_desc">Prevents the ColorSync deadlock that occurs with identical monitors on macOS Sequoia.</p>
+                <p data-i18n="feat_color_desc">Prevents the ColorSync deadlock with identical monitors on macOS Sequoia, and gives virtual displays a stable identity so they don't leak ICC profiles or keep colorsyncd busy.</p>
             </div>
         </div>
     </div>
@@ -490,6 +505,53 @@
     </div>
 </section>
 
+<section class="how" id="automation">
+    <div class="container">
+        <div class="how-grid">
+            <div class="how-content">
+                <div class="section-label" style="text-align:left;" data-i18n="auto_label">Automation</div>
+                <h2><span data-i18n="auto_title_1">Scriptable from </span><span class="grad" data-i18n="auto_title_2">the terminal</span></h2>
+                <p data-i18n="auto_desc">Every action is also a simpledisplay:// URL, and the simpledisplayctl command wraps them for shell scripts, Shortcuts, launchd agents, or an SSH session into a Mac with no monitor attached. The URL launches the app if it isn't running, so there is no extra background process.</p>
+                <div class="how-detail">
+                    <h4 data-i18n="auto_cli_title">Command line</h4>
+                    <p data-i18n="auto_cli_desc">Create, resize and remove virtual displays by name or ID with simpledisplayctl. Install it from a checkout with make cli-install.</p>
+                </div>
+                <div class="how-detail">
+                    <h4 data-i18n="auto_url_title">URL scheme</h4>
+                    <p data-i18n="auto_url_desc">open, create, remove, reconfigure, enable, disable and status. Every value is validated before the app acts on it, and malformed URLs show a one-line banner instead of failing silently.</p>
+                </div>
+                <div class="how-detail">
+                    <h4 data-i18n="auto_ssh_title">Remote Macs</h4>
+                    <p data-i18n="auto_ssh_desc">Run the CLI over SSH to drive the SimpleDisplay running on that Mac, for example to set a resolution before connecting with Screen Sharing.</p>
+                </div>
+                <a href="https://github.com/SamuelRioTz/SimpleDisplay#automation" class="btn btn-outline" style="margin-top:8px;">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                    <span data-i18n="auto_readme_btn">Read the automation docs</span>
+                </a>
+            </div>
+            <div>
+                <div class="terminal">
+                    <div class="terminal-bar">
+                        <div class="terminal-dot"></div>
+                        <div class="terminal-dot"></div>
+                        <div class="terminal-dot"></div>
+                    </div>
+                    <div class="terminal-body">
+                        <span style="color:#555570"># create, resize and remove virtual displays by name or id</span><br>
+                        <span style="color:var(--muted)">$</span> <span style="color:var(--text)">simpledisplayctl create</span> --width 2732 --height 2048 --name <span style="color:var(--green)">"iPad Pro"</span> --hidpi<br>
+                        <span style="color:var(--muted)">$</span> <span style="color:var(--text)">simpledisplayctl reconfigure</span> --id 3 --width 1600 --height 1200<br>
+                        <span style="color:var(--muted)">$</span> <span style="color:var(--text)">simpledisplayctl remove</span> --name <span style="color:var(--green)">"iPad Pro"</span><br><br>
+                        <span style="color:#555570"># the same actions as URLs, from anything that can open one</span><br>
+                        <span style="color:var(--muted)">$</span> <span style="color:var(--text)">open</span> <span style="color:var(--blue)">"simpledisplay://disable?name=J560T09"</span><br>
+                        <span style="color:var(--muted)">$</span> <span style="color:var(--text)">open</span> <span style="color:var(--blue)">"simpledisplay://status"</span> <span style="color:#555570"># &rarr; /tmp/simpledisplay-status.json</span><br><br>
+                        <span style="color:#555570"># drive a headless Mac over SSH</span><br>
+                        <span style="color:var(--muted)">$</span> <span style="color:var(--text)">ssh</span> user@mac <span style="color:var(--green)">"simpledisplayctl create --width 1920 --height 1080 --name Remote"</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 <section class="get-started" id="get-started">
     <div class="container">
         <div class="section-label" data-i18n="start_label">Get started</div>
@@ -520,7 +582,9 @@
                     <span class="cmd">cd SimpleDisplay</span><br>
                     <span class="cmd">make dmg</span><br><br>
                     <span class="comment"># run</span><br>
-                    <span class="cmd">open SimpleDisplay.app</span>
+                    <span class="cmd">open .build/SimpleDisplay.app</span><br><br>
+                    <span class="comment"># optional: install the CLI</span><br>
+                    <span class="cmd">make cli-install</span>
                 </div>
                 <a href="https://github.com/SamuelRioTz/SimpleDisplay" class="btn btn-outline" style="justify-content:center;">
                     <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
@@ -547,7 +611,7 @@
             </div>
             <div class="limitation-item">
                 <svg class="lim-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-                <p data-i18n="lim_3">Display identification uses names, so two identical monitors may not be distinguishable in all scenarios.</p>
+                <p data-i18n="lim_3">Enable/disable and main-display state are tracked by a stable per-display UUID, but the identical-monitor ColorSync fix and simpledisplayctl remove --name match displays by name, so two monitors with the same name may not be distinguishable there.</p>
             </div>
             <div class="limitation-item">
                 <svg class="lim-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
