@@ -537,10 +537,12 @@
                         <div class="terminal-dot"></div>
                     </div>
                     <div class="terminal-body">
-                        <span style="color:#555570"># create, resize and remove virtual displays by name or id</span><br>
+                        <span style="color:#555570"># virtual displays by name or id; turn any display off, on or into a mirror</span><br>
                         <span style="color:var(--muted)">$</span> <span style="color:var(--text)">simpledisplayctl create</span> --width 2732 --height 2048 --name <span style="color:var(--green)">"iPad Pro"</span> --hidpi<br>
                         <span style="color:var(--muted)">$</span> <span style="color:var(--text)">simpledisplayctl reconfigure</span> --id 3 --width 1600 --height 1200<br>
-                        <span style="color:var(--muted)">$</span> <span style="color:var(--text)">simpledisplayctl remove</span> --name <span style="color:var(--green)">"iPad Pro"</span><br><br>
+                        <span style="color:var(--muted)">$</span> <span style="color:var(--text)">simpledisplayctl remove</span> --name <span style="color:var(--green)">"iPad Pro"</span><br>
+                        <span style="color:var(--muted)">$</span> <span style="color:var(--text)">simpledisplayctl mirror</span> --name <span style="color:var(--green)">"DELL U2723QE"</span> <span style="color:#555570"># physical display &rarr; mirror of main</span><br>
+                        <span style="color:var(--muted)">$</span> <span style="color:var(--text)">simpledisplayctl disable</span> --id 2 --headless <span style="color:#555570"># off, confirmed up front</span><br><br>
                         <span style="color:#555570"># the same actions as URLs, from anything that can open one</span><br>
                         <span style="color:var(--muted)">$</span> <span style="color:var(--text)">open</span> <span style="color:var(--blue)">"simpledisplay://disable?name=J560T09"</span><br>
                         <span style="color:var(--muted)">$</span> <span style="color:var(--text)">open</span> <span style="color:var(--blue)">"simpledisplay://status"</span> <span style="color:#555570"># &rarr; /tmp/simpledisplay-status.json</span><br><br>
@@ -615,7 +617,11 @@
             </div>
             <div class="limitation-item">
                 <svg class="lim-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
-                <p data-i18n-html="lim_4">The <code style="font-size:12px;">CGVirtualDisplay</code> API may change or be removed in future macOS versions.</p>
+                <p data-i18n-html="lim_4">The <code style="font-size:12px;">CGVirtualDisplay</code> and <code style="font-size:12px;">CGSConfigureDisplayEnabled</code> APIs are undocumented and may change or be removed in future macOS versions.</p>
+            </div>
+            <div class="limitation-item">
+                <svg class="lim-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                <p data-i18n="lim_5">Virtual displays can't be mirror sources: on macOS 26 that crashes the window server, so SimpleDisplay refuses it. Mirror a physical display onto a virtual one instead.</p>
             </div>
         </div>
     </div>
