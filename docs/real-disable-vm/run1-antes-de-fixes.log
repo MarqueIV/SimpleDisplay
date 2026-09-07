@@ -1,0 +1,289 @@
+[23:53:02] == real-disable VM test  ip=192.168.64.14  Sun Sep  6 23:53:02 -04 2026 ==
+[23:53:02] guest: 26.6.2 arm64 
+[23:53:02] 
+[23:53:02] ################ S0 baseline ################
+[23:53:02] -- status (S0):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+PROBE online=1 active=1 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+[23:53:03]    PASS  solo la consola de la VM, encendida y main
+[23:53:03] consola id=1
+[23:53:03] 
+[23:53:03] ################ S1 crear 2 'Twin' identicos + 1 'Retina' HiDPI ################
+[23:53:03] -> simpledisplay://create?width=1280&height=720&name=Twin
+[23:53:07] -> simpledisplay://create?width=1280&height=720&name=Twin
+[23:53:11] -> simpledisplay://create?width=1600&height=900&name=Retina&hidpi=true
+[23:53:17] -- status (S1):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   2    Twin       1    1   0    0     1280x720
+   3    Twin       1    1   0    0     1280x720
+   4    Retina     1    1   0    1     1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:53:17]    PASS  4 displays, todos encendidos
+[23:53:17]    PASS  dos filas 'Twin'
+[23:53:17]    PASS  Retina es HiDPI 1600x900
+[23:53:17] ids: TWIN1=2 TWIN2=3 RET=4
+[23:53:17] 
+[23:53:17] ################ A gemelos: apagar Twin#1, el otro Twin conserva nombre y fila ################
+[23:53:17] -> simpledisplay://disable?id=2
+[23:53:25] -- status (A1):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   3    Twin       1    1   0    0     1280x720
+   4    Retina     1    1   0    1     1600x900
+   2    Twin       1    0   0    0     1280x720
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:53:25]    PASS  Twin#1 sigue listado (fantasma) y apagado
+[23:53:25]    PASS  Twin#1 conserva el nombre 'Twin'
+[23:53:25]    PASS  Twin#2 sigue encendido y con nombre 'Twin'
+[23:53:25]    PASS  siguen 4 filas (ninguna desaparecio)
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:53:25]    PASS  CG: Twin#1 fuera de la lista online (0=si) (0)
+[23:53:25] -> simpledisplay://enable?id=2
+[23:53:35] -- status (A2):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   2    Twin       1    1   0    0     1280x720
+   3    Twin       1    1   0    0     1280x720
+   4    Retina     1    1   0    1     1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:53:35]    PASS  Twin#1 encendido de nuevo
+[23:53:35]    PASS  los 4 encendidos
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:53:35]    PASS  CG: Twin#1 online y activo (1)
+[23:53:35] 
+[23:53:35] ################ B HiDPI: apagar y encender Retina, debe volver en HiDPI ################
+[23:53:35] -> simpledisplay://disable?id=4
+[23:53:43] -- status (B1):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   2    Twin       1    1   0    0     1280x720
+   3    Twin       1    1   0    0     1280x720
+   4    Retina     1    0   0    1     1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+[23:53:43]    PASS  Retina apagada
+[23:53:43] -> simpledisplay://enable?id=4
+[23:53:54] -- status (B2):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   2    Twin       1    1   0    0     1280x720
+   3    Twin       1    1   0    0     1280x720
+   4    Retina     1    1   0    1     1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:53:54]    PASS  Retina encendida
+[23:53:54]    PASS  Retina sigue HiDPI 1600x900
+[23:53:54] 
+[23:53:54] ################ C reinicio de la app con Retina apagada; reactivar desde la fila fantasma ################
+[23:53:54] -> simpledisplay://disable?id=4
+[23:54:02] -- status (C1):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   2    Twin       1    1   0    0     1280x720
+   3    Twin       1    1   0    0     1280x720
+   4    Retina     1    0   0    1     1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+[23:54:02]    PASS  Retina apagada antes de reiniciar
+[23:54:02] -> pkill SimpleDisplay; open -a SimpleDisplay
+[23:54:19] -- status (C2):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   5    Twin       1    1   0    0     1280x720
+   6    Twin       1    1   0    0     1280x720
+   7    Retina     1    1   0    1     1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=5 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=6 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+PROBE id=7 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:54:19]    PASS  app relanzada: 4 filas
+[23:54:19]    FAIL  Retina sigue apagada tras relanzar (estado persistido)   [expr: [d for d in items if d['name']=='Retina'][0]['on']==False -> False]
+[23:54:19]    PASS  los dos Twin encendidos
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=5 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=6 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+PROBE id=7 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:54:19]    FAIL  CG: Retina no esta online (0=si)   [got '1' expected '0']
+[23:54:19] -> simpledisplay://enable?name=Retina
+[23:54:30] -- status (C3):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   5    Twin       1    1   0    0     1280x720
+   6    Twin       1    1   0    0     1280x720
+   7    Retina     1    1   0    1     1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=5 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=6 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+PROBE id=7 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:54:30]    PASS  Retina reactivada desde el fantasma
+[23:54:30]    PASS  Retina volvio en HiDPI
+[23:54:31] ids tras reinicio: TWIN1=5 TWIN2=6 RET=7 CONSOLE=1
+[23:54:31] 
+[23:54:31] ################ D 'desconectar' un display apagado: apagar Twin#2, destruirlo, tocar el toggle ################
+[23:54:31] -> simpledisplay://disable?id=6
+[23:54:38] -- status (D1):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   5    Twin       1    1   0    0     1280x720
+   7    Retina     1    1   0    1     1600x900
+   6    Twin       1    0   0    0     1280x720
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=5 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=7 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:54:38]    PASS  Twin#2 apagado
+[23:54:38] -> simpledisplay://remove?id=6
+[23:54:44] -- status (D2):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   5    Twin       1    1   0    0     1280x720
+   7    Retina     1    1   0    1     1600x900
+   6    Twin       1    0   0    0     1280x720
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=5 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=7 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:54:44]    INFO  fila fantasma de Twin#2 tras remove: 1 (0 = se limpio solo, 1 = quedo)
+[23:54:44] -> simpledisplay://enable?id=6
+[23:54:53] -- status (D3):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   5    Twin       1    1   0    0     1280x720
+   7    Retina     1    1   0    1     1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=5 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=7 active=1 isActive=1 main=0 builtin=0 uuid=E3BD08CD-9ACF-4ABF-A67F-76EF61BBDD8D 1600x900 px=3200x1800 hidpi=1
+[23:54:53]    PASS  tras tocar el toggle, la fila muerta desaparecio
+[23:54:53]    PASS  siguen 3 displays encendidos
+[23:54:53] 
+[23:54:53] ################ H fantasmas sembrados desde una sesion previa: colision de ID y display inexistente ################
+[23:54:53] -> pkill; defaults write con 'Phantom' (lastKnownID=1, id vivo de otro display) y 'Orphan' (lastKnownID=9999)
+[23:55:11] -- status (H1):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   8    Twin       1    1   0    0     1280x720
+   9    Retina     1    1   0    0     1280x720
+   4    Retina     0    0   0    0     0x0
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+[23:55:12]    PASS  'Phantom' (ID en colision con la consola) NO se muestra
+[23:55:12]    PASS  la consola sigue encendida (no se toco el display equivocado)
+[23:55:12]    FAIL  'Orphan' (ID libre) se muestra como fila apagada placeholder   [expr: len([d for d in items if d['name']=='Orphan'])==1 and [d for d in items if d['name']=='Orphan'][0]['on']==False -> False]
+[23:55:12] -> simpledisplay://enable?name=Orphan
+[23:55:20] -- status (H2):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   8    Twin       1    1   0    0     1280x720
+   9    Retina     1    1   0    0     1280x720
+   4    Retina     0    0   0    0     0x0
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+[23:55:20]    PASS  al intentar encender 'Orphan' inexistente, se olvida la fila
+[23:55:21]    persistido ahora: 
+[23:55:21]    FAIL  Orphan quedo con isDisabled=false en persistencia   [got '' expected 'False']
+[23:55:21]    FAIL  Phantom conserva isDisabled=true en persistencia   [got '' expected 'True']
+[23:55:21] 
+[23:55:21] ################ E apagar el display MAIN (la consola): main debe transferirse antes ################
+[23:55:31] -- status (E0):
+   id   name       virt on  main hidpi mode
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+[23:55:32] -> simpledisplay://disable?id=
+[23:55:41] -- status (E1):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   8    Twin       1    1   0    0     1280x720
+   9    Retina     1    1   0    0     1280x720
+   4    Retina     0    0   0    0     0x0
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+[23:55:41]    FAIL  consola apagada (fantasma)   [expr: [d for d in items if d['id']==][0]['on']==False -> error]
+[23:55:41]    FAIL  otro display es main ahora   [expr: len([d for d in items if d['main'] and d['id']!=])==1 -> error]
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+[23:55:42]    PASS  CG: consola fuera de la lista online (0=si) (0)
+[23:55:42] -> simpledisplay://enable?id=
+[23:55:51] -- status (E2):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   8    Twin       1    1   0    0     1280x720
+   9    Retina     1    1   0    0     1280x720
+   4    Retina     0    0   0    0     0x0
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+[23:55:51]    FAIL  consola encendida de nuevo   [expr: [d for d in items if d['id']==][0]['on'] -> error]
+[23:55:51]    FAIL  todos encendidos   [expr: all(d['on'] for d in items) -> False]
+[23:55:52] 
+[23:55:52] ################ F sleep/wake (puede no estar soportado en VM) ################
+[23:55:52] pmset:  sleep 0 (sleep prevented by powerd); Sleep On Power Button 1; standby 0;
+[23:55:52] -> simpledisplay://disable?id=7
+[23:55:59] -- status (F0):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   8    Twin       1    1   0    0     1280x720
+   9    Retina     1    1   0    0     1280x720
+   4    Retina     0    0   0    0     0x0
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+Unable to sleep system: error 0xe00002e2
+[23:56:00]    INFO  sleepnow no aceptado en la VM
+[23:56:00] -> simpledisplay://enable?id=7
+[23:56:08] -- status (F2):
+   id   name       virt on  main hidpi mode
+   1    Apple Virtual 0    1   1    0     1920x1080
+   8    Twin       1    1   0    0     1280x720
+   9    Retina     1    1   0    0     1280x720
+   4    Retina     0    0   0    0     0x0
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 uuid=9A0911C6-7B3D-4140-93FB-DE91CCE602DB 1920x1080 px=1920x1080 hidpi=0
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 uuid=2DC98E40-1180-4888-AA7B-FEE581F5A785 1280x720 px=1280x720 hidpi=0
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 uuid=B5DF2BF2-76B2-4159-B011-5E1EC8C6A772 1280x720 px=1280x720 hidpi=0
+[23:56:08] 
+[23:56:08] ################ RESUMEN ################
+[23:56:08] PASS=27 FAIL=9
