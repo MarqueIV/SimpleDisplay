@@ -64,9 +64,7 @@ struct DisplayRowView: View {
                     }
                 }
                 if !display.isPlaceholder {
-                    Text(verbatim: display.currentMode.localizedResolutionString(locale))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    modeMenu
                 }
             }
 
@@ -104,6 +102,80 @@ struct DisplayRowView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .padding(.horizontal, 8)
         .opacity(display.isActive ? 1.0 : 0.7)
+    }
+
+    /// Resolution and zoom picker. The caption of the row is the menu: sizes
+    /// grouped as Retina ("looks like", HiDPI) and native, largest first; a size
+    /// with several refresh rates opens a submenu, otherwise it applies directly
+    /// keeping the current rate when offered.
+    @ViewBuilder
+    private var modeMenu: some View {
+        let groups = display.modeGroups
+        let hidpi = groups.filter { $0.isHiDPI }
+        let native = groups.filter { !$0.isHiDPI }
+        Menu {
+            if !hidpi.isEmpty {
+                Section(locale.t("mode_section_hidpi")) {
+                    ForEach(hidpi) { group in modeItem(group) }
+                }
+            }
+            if !native.isEmpty {
+                Section(locale.t("mode_section_native")) {
+                    ForEach(native) { group in modeItem(group) }
+                }
+            }
+        } label: {
+            HStack(spacing: 3) {
+                Text(verbatim: display.currentMode.localizedResolutionString(locale))
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8, weight: .semibold))
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .disabled(viewModel.isBusy || !display.isActive || display.isMirrored || groups.isEmpty)
+        .help(locale.t("mode_menu_help"))
+    }
+
+    @ViewBuilder
+    private func modeItem(_ group: ModeGroup) -> some View {
+        let isCurrent = group.width == display.currentMode.width
+            && group.height == display.currentMode.height
+            && group.isHiDPI == display.currentMode.isHiDPI
+        if group.modes.count > 1 {
+            Menu {
+                ForEach(group.modes) { mode in
+                    Button {
+                        viewModel.changeResolution(of: display, to: mode)
+                    } label: {
+                        if mode == display.currentMode {
+                            Label(mode.localizedRefreshRate(locale), systemImage: "checkmark")
+                        } else {
+                            Text(verbatim: mode.localizedRefreshRate(locale))
+                        }
+                    }
+                }
+            } label: {
+                if isCurrent {
+                    Label(group.sizeString, systemImage: "checkmark")
+                } else {
+                    Text(verbatim: group.sizeString)
+                }
+            }
+        } else {
+            Button {
+                viewModel.changeResolution(of: display, to: group.preferredMode(near: display.currentMode))
+            } label: {
+                if isCurrent {
+                    Label(group.sizeString, systemImage: "checkmark")
+                } else {
+                    Text(verbatim: group.sizeString)
+                }
+            }
+        }
     }
 
     private var iconName: String {

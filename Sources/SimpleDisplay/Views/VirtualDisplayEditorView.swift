@@ -16,13 +16,19 @@ struct VirtualDisplayEditorView: View {
 
     private var isEditing: Bool { editing != nil }
 
-    init(editing: DisplayInfo? = nil) {
+    /// Panel size and zoom the display was created with. The live mode can differ
+    /// (a zoom level picked from the row menu, or macOS's remembered mode), so
+    /// the editor starts from the saved config, not from what is on screen.
+    private let saved: VirtualDisplayService.VirtualDisplayConfig?
+
+    init(editing: DisplayInfo? = nil, saved: VirtualDisplayService.VirtualDisplayConfig? = nil) {
         self.editing = editing
+        self.saved = saved
         if let d = editing {
             _name = State(initialValue: d.name)
-            _width = State(initialValue: d.currentMode.width)
-            _height = State(initialValue: d.currentMode.height)
-            _hiDPI = State(initialValue: d.currentMode.isHiDPI)
+            _width = State(initialValue: saved?.width ?? d.currentMode.width)
+            _height = State(initialValue: saved?.height ?? d.currentMode.height)
+            _hiDPI = State(initialValue: saved?.hiDPI ?? d.currentMode.isHiDPI)
         } else {
             _name = State(initialValue: "Virtual Display")
             _width = State(initialValue: 1920)
@@ -33,10 +39,16 @@ struct VirtualDisplayEditorView: View {
 
     private var hasChanges: Bool {
         guard let d = editing else { return true }
-        return width != d.currentMode.width
-            || height != d.currentMode.height
-            || hiDPI != d.currentMode.isHiDPI
-            || name != d.name
+        let baseW = saved?.width ?? d.currentMode.width
+        let baseH = saved?.height ?? d.currentMode.height
+        let baseHiDPI = saved?.hiDPI ?? d.currentMode.isHiDPI
+        return width != baseW || height != baseH || hiDPI != baseHiDPI || name != d.name
+    }
+
+    /// What the desktop will look like: HiDPI renders the panel at 2x, so the
+    /// usable area is half the pixels in each direction.
+    private var looksLike: String {
+        hiDPI ? "\(width / 2) x \(height / 2)" : "\(width) x \(height)"
     }
 
     var body: some View {
@@ -128,13 +140,13 @@ struct VirtualDisplayEditorView: View {
                         .font(.caption).foregroundStyle(.secondary)
                         .frame(width: 80, alignment: .leading)
                     Spacer()
-                    Text(verbatim: editing?.currentMode.resolutionString ?? "")
+                    Text(verbatim: editing?.currentMode.localizedResolutionString(locale) ?? "")
                         .font(.caption).fontWeight(.medium)
                 }
             }
 
             HStack {
-                Text(locale.t("resolution"))
+                Text(locale.t("panel_size"))
                     .font(.caption).foregroundStyle(.secondary)
                     .frame(width: 80, alignment: .leading)
                 TextField("W", value: $width, format: .number.grouping(.never))
@@ -144,12 +156,31 @@ struct VirtualDisplayEditorView: View {
                 TextField("H", value: $height, format: .number.grouping(.never))
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 75)
+                Text(locale.t("pixels"))
+                    .font(.caption2).foregroundStyle(.secondary)
                 Spacer()
-                Toggle(locale.t("hidpi_retina"), isOn: $hiDPI)
-                    .toggleStyle(.switch)
-                    .controlSize(.small)
             }
 
+            HStack {
+                Text(locale.t("zoom"))
+                    .font(.caption).foregroundStyle(.secondary)
+                    .frame(width: 80, alignment: .leading)
+                Picker("", selection: $hiDPI) {
+                    Text(locale.t("zoom_1x")).tag(false)
+                    Text(locale.t("zoom_2x")).tag(true)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 170)
+                Spacer()
+                Text(verbatim: locale.t("looks_like_format", looksLike))
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+
+            if isEditing {
+                Text(locale.t("zoom_hint"))
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
         }
     }
 

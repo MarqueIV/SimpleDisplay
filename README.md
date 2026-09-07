@@ -20,6 +20,7 @@
 ## Features
 
 - **Enable/Disable displays** — turn monitors off for real (they go dark and leave the desktop) and back on, without unplugging them
+- **Resolution and zoom** — every row has a resolution menu: Retina "looks like" sizes, native sizes and refresh rates, for physical and virtual displays alike; a virtual display remembers your pick
 - **Mirror displays** — mirror a physical display onto the main one with one click, and back; a 15 s countdown protects you from turning off your last visible screen
 - **Virtual displays** — create virtual monitors with custom resolutions and device presets (iPhone, iPad, Mac, TV)
 - **Set main display** — change your primary monitor from the menu bar
@@ -74,6 +75,7 @@ is no separate background process to keep alive.
 | `simpledisplay://disable?id=N` or `?name=S` `[&headless=true]`          | Turn a display off (it goes dark and leaves the desktop). If it is the last visible display, a 15 s countdown turns it back on unless someone clicks **Keep off**; `headless=true` confirms up front. |
 | `simpledisplay://mirror?id=N` or `?name=S`                              | Mirror a physical display onto the main display (virtual displays can't be mirror sources, see below). |
 | `simpledisplay://unmirror?id=N` or `?name=S`                            | Stop mirroring a display.           |
+| `simpledisplay://mode?id=N` or `?name=S` `&width=N&height=N[&hidpi=true][&refresh=N]` | Switch a display (physical or virtual) to one of the modes it offers; `hidpi` picks the Retina "looks like" variant, omitted keeps the current scale and rate. |
 | `simpledisplay://status`                                                | Write the display list as JSON to `/tmp/simpledisplay-status.json`. |
 
 Values are validated — dimensions clamp to 100–8192, refresh capped at 60 Hz,
@@ -95,6 +97,7 @@ simpledisplayctl disable --id 2 --headless          # confirm up front (remote s
 simpledisplayctl enable --id 2
 simpledisplayctl mirror --name "DELL U2723QE"       # physical display -> mirror of the main display
 simpledisplayctl unmirror --name "DELL U2723QE"
+simpledisplayctl mode --name "Ultrawide" --width 1720 --height 720 --hidpi   # 2x zoom on a 3440x1440 virtual display
 simpledisplayctl open
 simpledisplayctl status   # exit 0 = installed, 2 = missing; prints pid if running
 ```

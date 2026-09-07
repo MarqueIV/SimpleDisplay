@@ -15,6 +15,10 @@ public enum URLCommand: Equatable, Sendable {
     /// Mirror a display onto the main display, or stop mirroring it. A
     /// separate, reversible state from enable/disable.
     case setMirrored(target: RemoveTarget, mirrored: Bool)
+    /// Switch an existing display (physical or virtual) to one of the modes it
+    /// offers: `width` x `height` points, HiDPI or not (nil = keep the current
+    /// scale), at `refreshRate` Hz (nil = keep the current rate if offered).
+    case setMode(target: RemoveTarget, width: Int, height: Int, hiDPI: Bool?, refreshRate: Double?)
     /// Dump the current display list as JSON to /tmp/simpledisplay-status.json
     /// so remote controllers (SSH + open) can read machine-readable state.
     case status
@@ -39,7 +43,7 @@ public enum URLCommandError: Error, Equatable, Sendable, CustomStringConvertible
         case .wrongScheme(let found):
             return "expected scheme 'simpledisplay', got '\(found ?? "<none>")'"
         case .unknownHost(let host):
-            return "unknown action '\(host)' — expected create/remove/reconfigure/enable/disable/mirror/unmirror/status/open"
+            return "unknown action '\(host)' — expected create/remove/reconfigure/enable/disable/mirror/unmirror/mode/status/open"
         case .missingHost:
             return "URL has no action (expected simpledisplay://<action>)"
         case .missingParameter(let name):
@@ -88,6 +92,8 @@ public enum URLCommandParser {
             return parseTarget(params).map { .setMirrored(target: $0, mirrored: true) }
         case "unmirror":
             return parseTarget(params).map { .setMirrored(target: $0, mirrored: false) }
+        case "mode":
+            return parseTarget(params).flatMap { target in parseMode(params, target: target) }
         case "status":
             return .success(.status)
         case "open":
@@ -127,6 +133,34 @@ public enum URLCommandParser {
             case .failure(let e): return .failure(e)
             }
         }
+    }
+
+    private static func parseMode(_ p: Params, target: RemoveTarget) -> Result<URLCommand, URLCommandError> {
+        let width: Int
+        switch p.requireDimension("width") {
+        case .success(let v): width = v
+        case .failure(let e): return .failure(e)
+        }
+        let height: Int
+        switch p.requireDimension("height") {
+        case .success(let v): height = v
+        case .failure(let e): return .failure(e)
+        }
+        var hiDPI: Bool?
+        if let raw = p.value("hidpi") {
+            switch parseBool(raw, name: "hidpi") {
+            case .success(let b): hiDPI = b
+            case .failure(let e): return .failure(e)
+            }
+        }
+        // No 60 Hz cap here: that limit is CGVirtualDisplay's, and `mode` also
+        // drives physical displays that run at 120 or 144 Hz.
+        var refresh: Double?
+        switch p.optionalPositiveDouble("refresh") {
+        case .success(let v): refresh = v
+        case .failure(let e): return .failure(e)
+        }
+        return .success(.setMode(target: target, width: width, height: height, hiDPI: hiDPI, refreshRate: refresh))
     }
 
     /// A boolean flag that defaults to false when absent.
@@ -269,6 +303,14 @@ private struct Params {
         return .success(v)
     }
 
+    func optionalPositiveDouble(_ name: String) -> Result<Double?, URLCommandError> {
+        guard let raw = value(name) else { return .success(nil) }
+        guard let v = Double(raw), v > 0, v <= 1000 else {
+            return .failure(.invalidParameter(name, reason: "expected a number between 0 and 1000"))
+        }
+        return .success(v)
+    }
+
     func requireName(_ name: String) -> Result<String, URLCommandError> {
         guard let raw = value(name) else {
             return .failure(.missingParameter(name))
@@ -305,6 +347,15 @@ extension URLCommand {
         case .setMirrored(let target, let mirrored):
             components.host = mirrored ? "mirror" : "unmirror"
             components.queryItems = targetQueryItems(target)
+        case .setMode(let target, let width, let height, let hiDPI, let refresh):
+            components.host = "mode"
+            var items = targetQueryItems(target) + [
+                URLQueryItem(name: "width", value: String(width)),
+                URLQueryItem(name: "height", value: String(height)),
+            ]
+            if let hiDPI { items.append(URLQueryItem(name: "hidpi", value: hiDPI ? "true" : "false")) }
+            if let refresh { items.append(URLQueryItem(name: "refresh", value: String(refresh))) }
+            components.queryItems = items
         case .status:
             components.host = "status"
         case .open:

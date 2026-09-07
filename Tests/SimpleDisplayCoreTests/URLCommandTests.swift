@@ -171,6 +171,32 @@ final class URLCommandTests: XCTestCase {
         XCTAssertEqual(try URLCommandParser.parse(original.url).get(), original)
     }
 
+    // MARK: - Mode
+
+    func testParseModeMinimal() throws {
+        XCTAssertEqual(try parse("simpledisplay://mode?id=4&width=1600&height=900"),
+                       .setMode(target: .id(4), width: 1600, height: 900, hiDPI: nil, refreshRate: nil))
+    }
+
+    func testParseModeFull() throws {
+        XCTAssertEqual(try parse("simpledisplay://mode?name=Retina&width=800&height=600&hidpi=true&refresh=60"),
+                       .setMode(target: .name("Retina"), width: 800, height: 600, hiDPI: true, refreshRate: 60))
+    }
+
+    func testModeRequiresDimensions() {
+        assertError("simpledisplay://mode?id=4&width=1600") { err in
+            XCTAssertEqual(err, .missingParameter("height"))
+        }
+    }
+
+    func testModeRoundTrip() throws {
+        let original = URLCommand.setMode(target: .name("Side"), width: 2560, height: 1440, hiDPI: false, refreshRate: 120)
+        XCTAssertEqual(try URLCommandParser.parse(original.url).get(), original)
+        let minimal = URLCommand.setMode(target: .id(2), width: 1920, height: 1080, hiDPI: nil, refreshRate: nil)
+        XCTAssertNil(minimal.url.query?.range(of: "hidpi"))
+        XCTAssertEqual(try URLCommandParser.parse(minimal.url).get(), minimal)
+    }
+
     // MARK: - Helpers
 
     private func parse(_ string: String) throws -> URLCommand {

@@ -74,6 +74,43 @@ struct DisplayInfo: Identifiable, Equatable {
 
     /// True for a reconstructed placeholder row that has no real mode info.
     var isPlaceholder: Bool { isEnabled == false && currentMode.width == 0 }
+
+    /// The modes this display offers, one entry per size and scale, with the
+    /// refresh rates each comes in. HiDPI ("looks like") sizes first, then
+    /// native ones; within each, largest first, as CoreGraphics lists them.
+    var modeGroups: [ModeGroup] {
+        var groups: [ModeGroup] = []
+        for mode in availableModes {
+            if let idx = groups.firstIndex(where: { $0.width == mode.width && $0.height == mode.height && $0.isHiDPI == mode.isHiDPI }) {
+                if !groups[idx].modes.contains(where: { abs($0.refreshRate - mode.refreshRate) < 0.1 }) {
+                    groups[idx].modes.append(mode)
+                }
+            } else {
+                groups.append(ModeGroup(width: mode.width, height: mode.height, isHiDPI: mode.isHiDPI, modes: [mode]))
+            }
+        }
+        return groups.sorted {
+            if $0.isHiDPI != $1.isHiDPI { return $0.isHiDPI }
+            if $0.width != $1.width { return $0.width > $1.width }
+            return $0.height > $1.height
+        }
+    }
+}
+
+/// One size-and-scale a display can run at, with its refresh rates (highest first).
+struct ModeGroup: Identifiable {
+    let width: Int
+    let height: Int
+    let isHiDPI: Bool
+    var modes: [DisplayMode]
+
+    var id: String { "\(width)x\(height)_\(isHiDPI ? "hi" : "lo")" }
+    var sizeString: String { "\(width) x \(height)" }
+    /// The mode to use when the user picks the size without a rate: the current
+    /// display's rate if this size offers it, else the highest.
+    func preferredMode(near current: DisplayMode) -> DisplayMode {
+        modes.first { abs($0.refreshRate - current.refreshRate) < 0.1 } ?? modes.max { $0.refreshRate < $1.refreshRate } ?? modes[0]
+    }
 }
 
 struct DisplayMode: Identifiable, Equatable, Hashable {

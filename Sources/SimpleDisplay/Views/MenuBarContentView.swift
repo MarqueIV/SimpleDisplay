@@ -140,7 +140,7 @@ struct MenuBarContentView: View {
 
             case .configuringDisplay:
                 if let display = configuringDisplay, display.isVirtual {
-                    VirtualDisplayEditorView(editing: display)
+                    VirtualDisplayEditorView(editing: display, saved: viewModel.virtualConfig(for: display))
                         .environment(viewModel)
                         .environment(locale)
                 } else {

@@ -89,7 +89,6 @@ final class DisplayManagerViewModel {
         displayService.fixDuplicateDisplayProfiles(displays: displays)
         Task {
             await settleAndRefresh()
-            enforceVirtualDisplayModes()
             await applyPersistedState()
         }
         registerForDisplayChanges()
@@ -194,6 +193,10 @@ final class DisplayManagerViewModel {
             }
         }
         refresh()
+        // Every topology change is a chance for macOS to swap a virtual display
+        // into a remembered mode (it keeps one per identity and per set of
+        // connected displays: turning a physical display off is a new set).
+        enforceVirtualDisplayModes()
     }
 
     /// Re-applies a display mode after a display has been brought back online,
@@ -224,35 +227,57 @@ final class DisplayManagerViewModel {
     /// `CGConfigureDisplayWithDisplayMode`; committed `.permanently`, it also
     /// becomes the mode macOS remembers from then on.
     private func enforceVirtualDisplayModes() {
-        for display in displays where display.isVirtual && display.isActive {
+        var changed = false
+        for display in displays where display.isVirtual && display.isActive && !display.isMirrored {
             guard let config = virtualService.config(for: display.id) else { continue }
+            let want = config.wantedMode
             let current = display.currentMode
-            if current.width == config.width && current.height == config.height && current.isHiDPI == config.hiDPI {
+            if current.width == want.width && current.height == want.height && current.isHiDPI == want.hiDPI {
                 continue
             }
             guard let wanted = display.availableModes.first(where: {
-                $0.width == config.width && $0.height == config.height && $0.isHiDPI == config.hiDPI
+                $0.width == want.width && $0.height == want.height && $0.isHiDPI == want.hiDPI
             }) else {
-                logger.warning("Virtual display '\(display.name)' offers no \(config.width)x\(config.height)\(config.hiDPI ? " HiDPI" : "") mode to enforce")
+                logger.warning("Virtual display '\(display.name)' offers no \(want.width)x\(want.height)\(want.hiDPI ? " HiDPI" : "") mode to enforce")
                 continue
             }
             do {
                 try displayService.setDisplayMode(wanted, for: display.id)
+                changed = true
                 logger.info("Re-applied configured mode \(wanted.width)x\(wanted.height)\(wanted.isHiDPI ? " HiDPI" : "") on virtual display '\(display.name)' (came up as \(current.width)x\(current.height))")
             } catch {
                 logger.warning("Could not re-apply configured mode on '\(display.name)': \(error.localizedDescription)")
             }
         }
-        refresh()
+        if changed { refresh() }
+    }
+
+    /// Saved config of a virtual display (panel size, zoom, chosen mode).
+    func virtualConfig(for display: DisplayInfo) -> VirtualDisplayService.VirtualDisplayConfig? {
+        display.isVirtual ? virtualService.config(for: display.id) : nil
     }
 
     // MARK: - Resolution Change
 
+    /// Switches a display to one of the modes it offers. For a virtual display
+    /// the pick is saved with its config, so it survives topology changes and
+    /// relaunches (see `enforceVirtualDisplayModes`).
     func changeResolution(of display: DisplayInfo, to mode: DisplayMode) {
-        do {
-            try displayService.setDisplayMode(mode, for: display.id)
-        } catch {
-            errorMessage = error.localizedDescription
+        guard !isBusy, display.isActive else { return }
+        isBusy = true
+        busyMessage = t("changing_mode_format", display.name)
+        Task {
+            defer { isBusy = false; busyMessage = nil }
+            do {
+                try displayService.setDisplayMode(mode, for: display.id)
+            } catch {
+                errorMessage = error.localizedDescription
+                return
+            }
+            if display.isVirtual {
+                virtualService.setChosenMode(id: display.id, width: mode.width, height: mode.height, hiDPI: mode.isHiDPI)
+            }
+            await settleAndRefresh()
         }
     }
 
@@ -578,7 +603,6 @@ final class DisplayManagerViewModel {
                 return
             }
             await settleAndRefresh()
-            enforceVirtualDisplayModes()
         }
     }
 
@@ -657,7 +681,6 @@ final class DisplayManagerViewModel {
 
             navigationState = .displayList
             await settleAndRefresh()
-            enforceVirtualDisplayModes()
         }
     }
 
@@ -735,6 +758,25 @@ final class DisplayManagerViewModel {
             }
             if display.isMirrored != mirrored {
                 toggleMirror(display)
+            }
+
+        case .setMode(let target, let width, let height, let hiDPI, let refreshRate):
+            refresh()
+            guard let display = firstDisplay(matching: target) else {
+                errorMessage = "No display matches \(String(describing: target))"
+                return
+            }
+            let wantHiDPI = hiDPI ?? display.currentMode.isHiDPI
+            let candidates = display.availableModes.filter {
+                $0.width == width && $0.height == height && $0.isHiDPI == wantHiDPI
+            }
+            let wantRefresh = refreshRate ?? display.currentMode.refreshRate
+            guard let mode = candidates.min(by: { abs($0.refreshRate - wantRefresh) < abs($1.refreshRate - wantRefresh) }) else {
+                errorMessage = t("mode_unavailable_format", display.name, width as CVarArg, height as CVarArg)
+                return
+            }
+            if mode != display.currentMode {
+                changeResolution(of: display, to: mode)
             }
 
         case .status:

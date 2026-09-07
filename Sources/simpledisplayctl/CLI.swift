@@ -23,6 +23,7 @@ struct CLI {
         case "disable":     runSetEnabled(rest, enabled: false)
         case "mirror":      runSetMirrored(rest, mirrored: true)
         case "unmirror":    runSetMirrored(rest, mirrored: false)
+        case "mode":        runSetMode(rest)
         case "open":        runOpen()
         case "status":      runStatus()
         case "-h", "--help", "help":
@@ -66,6 +67,18 @@ private func runSetEnabled(_ args: [String], enabled: Bool) {
 private func runSetMirrored(_ args: [String], mirrored: Bool) {
     let verb = mirrored ? "mirror" : "unmirror"
     dispatch(.setMirrored(target: target(Options(args), verb: verb), mirrored: mirrored))
+}
+
+/// Switch a display to one of the modes it offers.
+private func runSetMode(_ args: [String]) {
+    let opts = Options(args)
+    guard let width = opts.int("--width") else { fail("missing --width") }
+    guard let height = opts.int("--height") else { fail("missing --height") }
+    var hiDPI: Bool?
+    if opts.flag("--hidpi") { hiDPI = true }
+    if opts.flag("--no-hidpi") { hiDPI = false }
+    dispatch(.setMode(target: target(opts, verb: "mode"), width: width, height: height,
+                      hiDPI: hiDPI, refreshRate: opts.double("--refresh")))
 }
 
 /// Shared `--id <N>` XOR `--name <S>` display target.
@@ -150,6 +163,9 @@ private func printUsage() {
                    after 15 s unless someone confirms; --headless confirms now.
       mirror       --id N | --name S        Mirror a physical display onto the main one.
       unmirror     --id N | --name S        Stop mirroring it.
+      mode         --id N | --name S --width N --height N [--hidpi | --no-hidpi] [--refresh N]
+                   Switch a display to one of the modes it offers (points; --hidpi
+                   picks the Retina "looks like" variant).
       open         Focus the SimpleDisplay menu bar app.
       status       Print whether SimpleDisplay is installed / running.
       --version    Print CLI version.

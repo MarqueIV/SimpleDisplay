@@ -85,6 +85,14 @@ final class VirtualDisplayService {
         /// Serial slot this display was created with (see `allocateSerial`).
         /// Nil until first created; optional for configs saved by older versions.
         var serial: UInt32?
+        /// The mode the user picked among those macOS derives from the panel size
+        /// (`width` x `height`, `hiDPI`): a "zoom" level or a smaller resolution.
+        /// Nil means the panel's own mode. Re-applied whenever the topology
+        /// changes, because macOS keeps a remembered mode per identity and per
+        /// set of connected displays.
+        var modeWidth: Int?
+        var modeHeight: Int?
+        var modeHiDPI: Bool?
 
         /// Maximum supported refresh rate for CGVirtualDisplay
         static let maxRefreshRate: Double = 60.0
@@ -136,6 +144,14 @@ final class VirtualDisplayService {
             vendorID = try container.decodeIfPresent(UInt32.self, forKey: .vendorID) ?? 0x1234
             productID = try container.decodeIfPresent(UInt32.self, forKey: .productID) ?? 0x5678
             serial = try container.decodeIfPresent(UInt32.self, forKey: .serial)
+            modeWidth = try container.decodeIfPresent(Int.self, forKey: .modeWidth)
+            modeHeight = try container.decodeIfPresent(Int.self, forKey: .modeHeight)
+            modeHiDPI = try container.decodeIfPresent(Bool.self, forKey: .modeHiDPI)
+        }
+
+        /// The mode this display should be running: the chosen one, else the panel's.
+        var wantedMode: (width: Int, height: Int, hiDPI: Bool) {
+            (modeWidth ?? width, modeHeight ?? height, modeHiDPI ?? hiDPI)
         }
     }
 
@@ -260,6 +276,25 @@ final class VirtualDisplayService {
             configs[idx].height = height
             configs[idx].refreshRate = refreshRate
             configs[idx].hiDPI = hiDPI
+            // A new panel size derives a new mode list; the old pick is meaningless.
+            configs[idx].modeWidth = nil
+            configs[idx].modeHeight = nil
+            configs[idx].modeHiDPI = nil
+        }
+        writeConfigs(configs)
+    }
+
+    /// Remembers the mode the user picked for a live virtual display, so it is
+    /// re-applied after topology changes and on the next launch.
+    func setChosenMode(id: CGDirectDisplayID, width: Int, height: Int, hiDPI: Bool) {
+        guard let configID = displayConfigMap[id] else { return }
+        var configs = loadConfigs()
+        guard let idx = configs.firstIndex(where: { $0.configID == configID }) else { return }
+        let c = configs[idx]
+        if width == c.width && height == c.height && hiDPI == c.hiDPI {
+            configs[idx].modeWidth = nil; configs[idx].modeHeight = nil; configs[idx].modeHiDPI = nil
+        } else {
+            configs[idx].modeWidth = width; configs[idx].modeHeight = height; configs[idx].modeHiDPI = hiDPI
         }
         writeConfigs(configs)
     }
