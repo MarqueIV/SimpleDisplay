@@ -98,6 +98,11 @@ make cli-install          # copy to /usr/local/bin (override with CLI_INSTALL_DI
 simpledisplayctl create --width 2732 --height 2048 --name "iPad Pro" --hidpi
 simpledisplayctl remove --name "iPad Pro"
 simpledisplayctl reconfigure --id 3 --width 1600 --height 1200
+simpledisplayctl disable --name "DELL U2723QE"      # off for real; 15 s countdown if it is the last visible display
+simpledisplayctl disable --id 2 --headless          # confirm up front (remote sessions, scripts)
+simpledisplayctl enable --id 2
+simpledisplayctl mirror --name "DELL U2723QE"       # physical display -> mirror of the main display
+simpledisplayctl unmirror --name "DELL U2723QE"
 simpledisplayctl open
 simpledisplayctl status   # exit 0 = installed, 2 = missing; prints pid if running
 ```

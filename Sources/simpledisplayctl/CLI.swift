@@ -19,6 +19,10 @@ struct CLI {
         case "create":      runCreate(rest)
         case "remove":      runRemove(rest)
         case "reconfigure": runReconfigure(rest)
+        case "enable":      runSetEnabled(rest, enabled: true)
+        case "disable":     runSetEnabled(rest, enabled: false)
+        case "mirror":      runSetMirrored(rest, mirrored: true)
+        case "unmirror":    runSetMirrored(rest, mirrored: false)
         case "open":        runOpen()
         case "status":      runStatus()
         case "-h", "--help", "help":
@@ -46,14 +50,33 @@ private func runCreate(_ args: [String]) {
 }
 
 private func runRemove(_ args: [String]) {
+    dispatch(.remove(target(Options(args), verb: "remove")))
+}
+
+/// `--headless` confirms up front that turning off the last visible display is
+/// intended (scripted or remote use); without it the app runs a 15 s revert
+/// countdown for that case. Ignored on enable.
+private func runSetEnabled(_ args: [String], enabled: Bool) {
     let opts = Options(args)
+    let verb = enabled ? "enable" : "disable"
+    dispatch(.setEnabled(target: target(opts, verb: verb), enabled: enabled, headless: !enabled && opts.flag("--headless")))
+}
+
+/// Mirror a physical display onto the main display, or stop mirroring it.
+private func runSetMirrored(_ args: [String], mirrored: Bool) {
+    let verb = mirrored ? "mirror" : "unmirror"
+    dispatch(.setMirrored(target: target(Options(args), verb: verb), mirrored: mirrored))
+}
+
+/// Shared `--id <N>` XOR `--name <S>` display target.
+private func target(_ opts: Options, verb: String) -> RemoveTarget {
     let id = opts.uint32("--id")
     let name = opts.string("--name")
     switch (id, name) {
-    case (nil, nil):   fail("remove requires --id <N> or --name <S>")
-    case (_?, _?):     fail("remove accepts only one of --id / --name")
-    case (let id?, _): dispatch(.remove(.id(id)))
-    case (_, let n?):  dispatch(.remove(.name(n)))
+    case (nil, nil):   fail("\(verb) requires --id <N> or --name <S>")
+    case (_?, _?):     fail("\(verb) accepts only one of --id / --name")
+    case (let id?, _): return .id(id)
+    case (_, let n?):  return .name(n)
     }
 }
 
@@ -120,6 +143,13 @@ private func printUsage() {
       create       --width N --height N [--name S] [--refresh N] [--hidpi]
       remove       --id N | --name S
       reconfigure  --id N --width N --height N [--refresh N] [--hidpi] [--name S]
+      enable       --id N | --name S        Turn a display back on.
+      disable      --id N | --name S [--headless]
+                   Turn a display off (it goes dark and leaves the desktop).
+                   If it is the last visible display the app turns it back on
+                   after 15 s unless someone confirms; --headless confirms now.
+      mirror       --id N | --name S        Mirror a physical display onto the main one.
+      unmirror     --id N | --name S        Stop mirroring it.
       open         Focus the SimpleDisplay menu bar app.
       status       Print whether SimpleDisplay is installed / running.
       --version    Print CLI version.
