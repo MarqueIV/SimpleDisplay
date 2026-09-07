@@ -597,6 +597,9 @@ final class DisplayManagerViewModel {
         Task {
             defer { isBusy = false; busyMessage = nil }
             let displayName = name ?? display.name
+            // Keep the display's identity (serial) across the recreate, so
+            // ColorSync and macOS's per-display mode memory see the same device.
+            let serial = virtualService.serial(for: display.id)
             await forgetDisabledState(of: display)
             virtualService.removeVirtualDisplay(id: display.id)
             virtualDisplayIDs.remove(display.id)
@@ -605,7 +608,8 @@ final class DisplayManagerViewModel {
             let config = VirtualDisplayService.VirtualDisplayConfig(
                 name: displayName,
                 width: width, height: height,
-                refreshRate: refreshRate, hiDPI: hiDPI
+                refreshRate: refreshRate, hiDPI: hiDPI,
+                serial: serial
             )
             do {
                 let newID = try virtualService.createVirtualDisplay(config: config)

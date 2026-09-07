@@ -44,8 +44,11 @@ Implementación en `Sources/SimpleDisplay/Services/VirtualDisplayService.swift`:
   El slot se libera en `removeVirtualDisplay`, `removeAll`, `pruneTerminatedDisplays`
   y en los dos caminos de error de `createVirtualDisplay` (wrapper nil / applyWidth falla,
   donde además ahora se invalida el wrapper).
-- Como los displays se restauran al arrancar en el orden guardado, cada display persistido
-  recupera el mismo serial (y el mismo perfil) también entre reinicios de la app.
+- El serial se guarda con la config de cada display (`VirtualDisplayConfig.serial`, desde
+  2026-09-07), así que cada display persistido recupera el mismo serial (y el mismo perfil)
+  entre reinicios de la app aunque se haya quitado otro en medio. Antes se reasignaba por
+  orden de restauración y el siguiente heredaba el slot, la identidad y el modo recordado
+  por macOS de un display quitado (ver `docs/real-disable-vm/README.md`).
 - Podado: `scheduleColorSyncCleanup` (borrar el `.icc` solo obliga a regenerarlo en el
   próximo create), `unregisterColorSyncDevice` (AuthorizationCreate por XPC síncrono:
   colgaba la app y encola un diálogo de password) y `removeICCProfile` (osascript con

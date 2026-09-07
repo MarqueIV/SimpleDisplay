@@ -20,18 +20,39 @@ final class VirtualDisplayService {
     // fresh .icc in /Library/ColorSync/Profiles/Displays (root-owned, we can't
     // delete it) and re-validates the growing pile forever — that is the
     // colorsyncd/displayservices CPU loop and the "56 profiles after 100 displays"
-    // leak. Reusing a small pool of STABLE serials (lowest free slot) makes the
-    // Nth virtual display always the same device, so macOS reuses its profile:
-    // the profile count is bounded by the max number of simultaneous displays.
+    // leak. Reusing a small pool of STABLE serials makes a virtual display the
+    // same device every time, so macOS reuses its profile: the profile count is
+    // bounded by the max number of simultaneous displays.
+    //
+    // The serial is persisted with the display's config, so a display keeps its
+    // identity across launches even when another one was removed in between.
+    // Identity matters beyond ColorSync: macOS also remembers per-identity mode
+    // preferences, and a display that inherited another one's slot after a
+    // relaunch came back in the other one's mode (1600x900 HiDPI -> 1280x720,
+    // see docs/real-disable-vm).
     private var usedSerials: Set<UInt32> = []
     private var serialByDisplay: [CGDirectDisplayID: UInt32] = [:]
     private static let maxSerialSlots: UInt32 = 4095
 
-    private func allocateSerial() -> UInt32 {
+    /// A config that already owns a serial keeps it; otherwise the lowest slot
+    /// that is neither live nor owned by another persisted config.
+    private func allocateSerial(preferred: UInt32?) -> UInt32 {
+        if let preferred, (1..<Self.maxSerialSlots).contains(preferred), !usedSerials.contains(preferred) {
+            usedSerials.insert(preferred)
+            return preferred
+        }
+        let reserved = Set(loadConfigs().compactMap(\.serial))
         var serial: UInt32 = 1
-        while usedSerials.contains(serial) && serial < Self.maxSerialSlots { serial += 1 }
+        while (usedSerials.contains(serial) || reserved.contains(serial)) && serial < Self.maxSerialSlots {
+            serial += 1
+        }
         usedSerials.insert(serial)
         return serial
+    }
+
+    /// The serial slot a live virtual display was created with.
+    func serial(for displayID: CGDirectDisplayID) -> UInt32? {
+        serialByDisplay[displayID]
     }
 
     private func releaseSerial(for displayID: CGDirectDisplayID) {
@@ -55,6 +76,9 @@ final class VirtualDisplayService {
         var physicalHeightMM: Double
         var vendorID: UInt32
         var productID: UInt32
+        /// Serial slot this display was created with (see `allocateSerial`).
+        /// Nil until first created; optional for configs saved by older versions.
+        var serial: UInt32?
 
         /// Maximum supported refresh rate for CGVirtualDisplay
         static let maxRefreshRate: Double = 60.0
@@ -73,7 +97,8 @@ final class VirtualDisplayService {
             physicalWidthMM: Double = 527,
             physicalHeightMM: Double = 296,
             vendorID: UInt32 = 0x1234,
-            productID: UInt32 = 0x5678
+            productID: UInt32 = 0x5678,
+            serial: UInt32? = nil
         ) {
             self.configID = configID
             self.name = name
@@ -85,6 +110,7 @@ final class VirtualDisplayService {
             self.physicalHeightMM = physicalHeightMM
             self.vendorID = vendorID
             self.productID = productID
+            self.serial = serial
         }
 
         // Backward-compatible decoding: old configs without configID get a new UUID
@@ -103,23 +129,27 @@ final class VirtualDisplayService {
             physicalHeightMM = try container.decodeIfPresent(Double.self, forKey: .physicalHeightMM) ?? 296
             vendorID = try container.decodeIfPresent(UInt32.self, forKey: .vendorID) ?? 0x1234
             productID = try container.decodeIfPresent(UInt32.self, forKey: .productID) ?? 0x5678
+            serial = try container.decodeIfPresent(UInt32.self, forKey: .serial)
         }
     }
 
     // MARK: - Restore on Launch
 
     func restoreSavedDisplays() -> [(id: CGDirectDisplayID, name: String)] {
-        let configs = loadConfigs()
+        var configs = loadConfigs()
         var restored: [(id: CGDirectDisplayID, name: String)] = []
-        for config in configs {
+        for idx in configs.indices {
             do {
-                let id = try createVirtualDisplay(config: config, persist: false)
-                restored.append((id: id, name: config.name))
+                let id = try createVirtualDisplay(config: configs[idx], persist: false)
+                restored.append((id: id, name: configs[idx].name))
+                // Configs saved by older versions have no serial: pin the one
+                // they got so it stays theirs from now on.
+                configs[idx].serial = serialByDisplay[id]
             } catch {
-                logger.warning("Failed to restore virtual display '\(config.name)': \(error.localizedDescription)")
+                logger.warning("Failed to restore virtual display '\(configs[idx].name)': \(error.localizedDescription)")
             }
         }
-        // Re-save to persist stable configIDs (migrates old configs without UUIDs)
+        // Re-save to persist stable configIDs and serials (migrates old configs)
         writeConfigs(configs)
         return restored
     }
@@ -128,8 +158,10 @@ final class VirtualDisplayService {
 
     @discardableResult
     func createVirtualDisplay(config: VirtualDisplayConfig, persist: Bool = true) throws -> CGDirectDisplayID {
-        // Stable per-slot serial (see `allocateSerial`), never random.
-        let serial = allocateSerial()
+        // Stable serial (see `allocateSerial`), never random. The config keeps it.
+        var config = config
+        let serial = allocateSerial(preferred: config.serial)
+        config.serial = serial
 
         // Use large maxPixels so we can reconfigure later without recreating
         let maxW: UInt = 8192
