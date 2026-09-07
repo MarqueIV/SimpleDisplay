@@ -37,17 +37,9 @@ Download the latest DMG from [Releases](https://github.com/SamuelRioTz/SimpleDis
 
 ### First launch
 
-Since SimpleDisplay uses private APIs and isn't notarized, macOS will block it on first launch. To open it:
+Since v1.6.1 the DMG is signed with a Developer ID and notarized by Apple, so it opens like any other app.
 
-1. Open **System Settings → Privacy & Security**
-2. You'll see a message saying SimpleDisplay was blocked
-3. Click **Open Anyway**
-
-<p align="center">
-  <img src="branding/assets/gatekeeper.png" width="520" alt="macOS Gatekeeper prompt — click Open Anyway in Privacy & Security">
-</p>
-
-> This only needs to be done once. After that, the app opens normally.
+> Older builds (v1.6.0 and before) were only ad-hoc signed and macOS blocks them on first launch: open **System Settings → Privacy & Security**, find the message saying SimpleDisplay was blocked, and click **Open Anyway**. Once is enough.
 
 ### Build from source
 

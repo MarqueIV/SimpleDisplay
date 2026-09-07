@@ -70,7 +70,7 @@
   "start_download_title": "Descargar",
   "start_download_desc": "Descarga el último DMG desde GitHub Releases. Ábrelo, arrastra a Aplicaciones y listo.",
   "start_first_launch": "Primer inicio",
-  "start_first_launch_desc": "macOS bloqueará la app porque no está notarizada. Ve a <strong style=\"color:var(--text);\">Ajustes del Sistema → Privacidad y Seguridad</strong> y haz clic en <strong style=\"color:var(--text);\">Abrir igualmente</strong>. Esto solo se hace una vez.",
+  "start_first_launch_desc": "Desde la v1.6.1 la app está firmada con Developer ID y notarizada por Apple, así que se abre como cualquier otra. Las versiones anteriores se bloqueaban al abrirlas por primera vez: ve a <strong style=\"color:var(--text);\">Ajustes del Sistema → Privacidad y seguridad</strong> y pulsa <strong style=\"color:var(--text);\">Abrir de todos modos</strong>, una sola vez.",
   "start_download_btn": "Descargar última versión",
   "start_dev": "Para desarrolladores",
   "start_build_title": "Compilar desde el código",

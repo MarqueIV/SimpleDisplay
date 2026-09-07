@@ -70,7 +70,7 @@
   "start_download_title": "Download",
   "start_download_desc": "Grab the latest DMG from GitHub Releases. Open it, drag to Applications, and you're done.",
   "start_first_launch": "First launch",
-  "start_first_launch_desc": "macOS will block the app since it isn't notarized. Go to <strong style=\"color:var(--text);\">System Settings → Privacy & Security</strong> and click <strong style=\"color:var(--text);\">Open Anyway</strong>. This only needs to be done once.",
+  "start_first_launch_desc": "Since v1.6.1 the app is signed with a Developer ID and notarized by Apple, so it opens like any other app. Older builds were blocked on first launch: go to <strong style=\"color:var(--text);\">System Settings → Privacy & Security</strong> and click <strong style=\"color:var(--text);\">Open Anyway</strong>, once.",
   "start_download_btn": "Download latest release",
   "start_dev": "For developers",
   "start_build_title": "Build from source",

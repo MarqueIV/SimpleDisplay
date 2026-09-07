@@ -70,7 +70,7 @@
   "start_download_title": "Herunterladen",
   "start_download_desc": "Lade das neueste DMG von GitHub Releases herunter. Öffne es, ziehe es zu Programme und fertig.",
   "start_first_launch": "Erster Start",
-  "start_first_launch_desc": "macOS wird die App blockieren, da sie nicht notarisiert ist. Gehe zu <strong style=\"color:var(--text);\">Systemeinstellungen → Datenschutz & Sicherheit</strong> und klicke auf <strong style=\"color:var(--text);\">Trotzdem öffnen</strong>. Das muss nur einmal gemacht werden.",
+  "start_first_launch_desc": "Seit v1.6.1 ist die App mit einer Developer ID signiert und von Apple notarisiert, sie öffnet sich also wie jede andere App. Ältere Builds wurden beim ersten Start blockiert: gehe zu <strong style=\"color:var(--text);\">Systemeinstellungen → Datenschutz & Sicherheit</strong> und klicke einmal auf <strong style=\"color:var(--text);\">Dennoch öffnen</strong>.",
   "start_download_btn": "Neueste Version herunterladen",
   "start_dev": "Für Entwickler",
   "start_build_title": "Aus Quellcode kompilieren",

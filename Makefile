@@ -15,13 +15,20 @@ DMG_STAGING = $(OUT_DIR)/dmg-staging
 VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "1.0.0")
 CLI_VERSION_FILE = Sources/simpledisplayctl/Version.swift
 
+# Code signing. On a Mac with the personal team's certificate (see scripts/sign-identity.sh)
+# this is "Developer ID Application: ..." and `make notarize`/`make release` produce a
+# notarized DMG that Gatekeeper opens without prompts. Anywhere else (CI included) it
+# falls back to ad-hoc signing, which still gets the Hardened Runtime.
+SIGN_ID ?= $(shell scripts/sign-identity.sh 2>/dev/null || echo -)
+TIMESTAMP = $(if $(filter -,$(SIGN_ID)),,--timestamp)
+
 # The CLI version file is committed with "dev" so plain `swift build` works.
 # Release builds stamp $(VERSION) before compiling and restore "dev" after,
 # so the git tag is the single source of truth for shipped binaries.
 STAMP_VERSION = printf 'enum CLIVersion {\n    static let string = "$(VERSION)"\n}\n' > $(CLI_VERSION_FILE)
 STAMP_DEV = printf 'enum CLIVersion {\n    // Overwritten by Make with $$(VERSION) during release builds, then restored.\n    static let string = "dev"\n}\n' > $(CLI_VERSION_FILE)
 
-.PHONY: all build bundle run clean debug sign dmg cli cli-install test
+.PHONY: all build bundle run clean debug sign dmg dmg-only notarize release cli cli-install test
 
 all: bundle
 
@@ -72,14 +79,20 @@ run-release: bundle
 	@open $(APP_BUNDLE)
 
 sign: bundle
-	@codesign --sign - \
+	@scripts/unlock-signing-keychain.sh
+	@codesign --sign "$(SIGN_ID)" $(TIMESTAMP) \
 		--options runtime \
 		--entitlements Entitlements.plist \
 		--force \
 		$(APP_BUNDLE)
-	@echo "Signed $(APP_BUNDLE) (Hardened Runtime)"
+	@codesign --verify --deep --strict $(APP_BUNDLE)
+	@echo "Signed $(APP_BUNDLE) (Hardened Runtime, $(if $(filter -,$(SIGN_ID)),ad hoc,$(SIGN_ID)))"
 
-dmg: sign
+dmg: sign dmg-only
+
+# Packages the already signed (and, via `notarize`, stapled) bundle. Kept apart from
+# `sign` because re-signing a stapled bundle would discard its notarization ticket.
+dmg-only:
 	@rm -f $(DMG_NAME)
 	@mkdir -p $(DMG_STAGING)
 	@cp -R $(APP_BUNDLE) $(DMG_STAGING)/
@@ -117,6 +130,20 @@ dmg: sign
 	@rm -f /tmp/$(APP_NAME)_rw.dmg
 	@rm -rf $(DMG_STAGING)
 	@echo "Created $(DMG_NAME)"
+
+# Notarized, stapled DMG: sign, notarize + staple the app, package it, then sign,
+# notarize + staple the image itself so Gatekeeper accepts it offline too.
+notarize: sign
+	@test "$(SIGN_ID)" != "-" || { echo "notarize: no Developer ID identity (scripts/sign-identity.sh)"; exit 1; }
+	@scripts/notarize.sh app $(APP_BUNDLE)
+	@$(MAKE) dmg-only SIGN_ID="$(SIGN_ID)"
+	@scripts/notarize.sh dmg $(DMG_NAME) "$(SIGN_ID)"
+
+# Replace the DMG that the Release workflow attached (ad hoc) with the notarized one.
+release: notarize
+	@gh release view v$(VERSION) >/dev/null 2>&1 || { echo "release: no GitHub release v$(VERSION) yet (push the tag first)"; exit 1; }
+	@gh release upload v$(VERSION) $(DMG_NAME) --clobber
+	@echo "Uploaded notarized $(DMG_NAME) to release v$(VERSION)"
 
 clean:
 	@rm -rf .build
