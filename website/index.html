@@ -366,7 +366,7 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
                 </div>
                 <h3 data-i18n="feat_toggle_title">Enable / Disable Displays</h3>
-                <p data-i18n="feat_toggle_desc">Toggle monitors on and off without unplugging them. Handles edge cases like disabling the main display safely.</p>
+                <p data-i18n="feat_toggle_desc">Turn monitors off for real: they go dark and leave the desktop, and come back with one click. Prefer to keep one on? Mirror it onto the main display instead. A 15-second countdown protects your last visible screen.</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">
@@ -514,11 +514,11 @@
                 <p data-i18n="auto_desc">Every action is also a simpledisplay:// URL, and the simpledisplayctl command wraps them for shell scripts, Shortcuts, launchd agents, or an SSH session into a Mac with no monitor attached. The URL launches the app if it isn't running, so there is no extra background process.</p>
                 <div class="how-detail">
                     <h4 data-i18n="auto_cli_title">Command line</h4>
-                    <p data-i18n="auto_cli_desc">Create, resize and remove virtual displays by name or ID with simpledisplayctl. Install it from a checkout with make cli-install.</p>
+                    <p data-i18n="auto_cli_desc">Create, resize and remove virtual displays, and turn any display off, on or into a mirror, by name or ID with simpledisplayctl. Install it from a checkout with make cli-install.</p>
                 </div>
                 <div class="how-detail">
                     <h4 data-i18n="auto_url_title">URL scheme</h4>
-                    <p data-i18n="auto_url_desc">open, create, remove, reconfigure, enable, disable and status. Every value is validated before the app acts on it, and malformed URLs show a one-line banner instead of failing silently.</p>
+                    <p data-i18n="auto_url_desc">open, create, remove, reconfigure, enable, disable (with an optional headless confirmation), mirror, unmirror and status. Every value is validated before the app acts on it, and malformed URLs show a one-line banner instead of failing silently.</p>
                 </div>
                 <div class="how-detail">
                     <h4 data-i18n="auto_ssh_title">Remote Macs</h4>
