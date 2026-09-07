@@ -103,29 +103,33 @@ dmg-only:
 		-srcfolder $(DMG_STAGING) \
 		-ov -format UDRW \
 		/tmp/$(APP_NAME)_rw.dmg
-	@hdiutil attach /tmp/$(APP_NAME)_rw.dmg -mountpoint /tmp/$(APP_NAME)_mount
-	@cp branding/assets/AppIcon.icns /tmp/$(APP_NAME)_mount/.VolumeIcon.icns
-	@-SetFile -a C /tmp/$(APP_NAME)_mount 2>/dev/null || true
-	@osascript -e '\
-		tell application "Finder" \n\
-			tell disk "$(APP_NAME)" \n\
-				open \n\
-				set current view of container window to icon view \n\
-				set toolbar visible of container window to false \n\
-				set statusbar visible of container window to false \n\
-				set bounds of container window to {200, 120, 860, 520} \n\
-				set opts to icon view options of container window \n\
-				set icon size of opts to 80 \n\
-				set arrangement of opts to not arranged \n\
-				set background picture of opts to file ".background:background.png" \n\
-				set position of item "$(APP_NAME).app" of container window to {165, 168} \n\
-				set position of item "Applications" of container window to {495, 168} \n\
-				close \n\
-				open \n\
-			end tell \n\
-		end tell' || true
-	@sync
-	@hdiutil detach /tmp/$(APP_NAME)_mount
+	@# Mount under /Volumes (not a custom mountpoint): Finder only resolves items, and so
+	@# the background picture, on volumes it browses. The volume name may get a suffix
+	@# if another "$(APP_NAME)" volume is mounted, hence the lookup.
+	@MNT=$$(hdiutil attach /tmp/$(APP_NAME)_rw.dmg -noverify | grep -o '/Volumes/.*' | head -1); \
+	cp branding/assets/AppIcon.icns "$$MNT/.VolumeIcon.icns"; SetFile -a C "$$MNT" 2>/dev/null || true; \
+	osascript \
+		-e 'tell application "Finder"' \
+		-e "tell disk \"$$(basename "$$MNT")\"" \
+		-e 'open' \
+		-e 'delay 1' \
+		-e 'set current view of container window to icon view' \
+		-e 'set toolbar visible of container window to false' \
+		-e 'set statusbar visible of container window to false' \
+		-e 'set bounds of container window to {200, 120, 860, 520}' \
+		-e 'set opts to icon view options of container window' \
+		-e 'set icon size of opts to 80' \
+		-e 'set arrangement of opts to not arranged' \
+		-e 'set background picture of opts to file ".background:background.png"' \
+		-e 'set position of item "$(APP_NAME).app" of container window to {165, 168}' \
+		-e 'set position of item "Applications" of container window to {495, 168}' \
+		-e 'close' \
+		-e 'open' \
+		-e 'delay 1' \
+		-e 'close' \
+		-e 'end tell' \
+		-e 'end tell' || echo "dmg: Finder layout not applied (no GUI session?)"; \
+	sync; sleep 1; hdiutil detach "$$MNT" -quiet
 	@hdiutil convert /tmp/$(APP_NAME)_rw.dmg -format UDZO -o $(DMG_NAME)
 	@rm -f /tmp/$(APP_NAME)_rw.dmg
 	@rm -rf $(DMG_STAGING)
