@@ -112,14 +112,33 @@ final class DisplayManagerViewModel {
             return info.with(name: displayName, isVirtual: isVirtual)
         }
 
-        // Any display that is back in the online list is no longer a ghost.
-        let liveUUIDs = Set(result.compactMap { $0.uuid })
-        for uuid in liveUUIDs { disabledGhosts[uuid] = nil }
-
         // Re-attach rows for disabled displays that have left the online list,
-        // so the user can still toggle them back on.
-        for (uuid, ghost) in disabledGhosts where !liveUUIDs.contains(uuid) {
-            result.append(ghost)
+        // so the user can still toggle them back on. A ghost is addressed by a
+        // CGDirectDisplayID that macOS may have reassigned since it was disabled,
+        // so each one is reconciled against the live list before it is shown.
+        let verdicts = GhostReconciler.reconcile(
+            ghosts: disabledGhosts.map { GhostReconciler.Ghost(uuid: $0.key, id: $0.value.id) },
+            live: result.map { GhostReconciler.Live(uuid: $0.uuid, id: $0.id) },
+            resolveID: { displayService.displayID(forUUID: $0) }
+        )
+        for (uuid, ghost) in disabledGhosts.sorted(by: { $0.value.name < $1.value.name }) {
+            switch verdicts[uuid] {
+            case .backOnline:
+                // The display is live again; its real row replaces the ghost.
+                disabledGhosts[uuid] = nil
+            case .keep(let id):
+                let row = ghost.id == id ? ghost : ghost.with(id: id)
+                disabledGhosts[uuid] = row
+                result.append(row)
+            case .collided(let liveUUID):
+                // Toggling this ghost would act on whichever display now owns its
+                // ID. Drop the row but keep the persisted disabled flag, so the
+                // display is disabled again (with a fresh ID) if it comes back.
+                logger.warning("Dropping ghost row '\(ghost.name)' (\(uuid)): its retained ID \(ghost.id) now belongs to \(liveUUID ?? "a display without UUID")")
+                disabledGhosts[uuid] = nil
+            case nil:
+                break
+            }
         }
 
         displays = result
@@ -162,12 +181,17 @@ final class DisplayManagerViewModel {
 
     /// Re-applies a display mode after a display has been brought back online,
     /// since `CGSConfigureDisplayEnabled` can re-enable a display at a default
-    /// (often non-HiDPI) mode. No-op if the display is gone or already matches.
-    private func restoreMode(_ mode: DisplayMode, for id: CGDirectDisplayID) {
-        guard let current = displays.first(where: { $0.id == id && $0.isActive }) else { return }
+    /// (often non-HiDPI) mode. The display is looked up by UUID: re-enabling is
+    /// a topology change, after which macOS may hand it a new CGDirectDisplayID.
+    /// No-op if the display is not back yet or already has the mode.
+    private func restoreMode(_ mode: DisplayMode, forUUID uuid: String) {
+        guard let current = displays.first(where: { $0.uuid == uuid && $0.isActive }) else {
+            logger.info("Skipping mode restore: display \(uuid) is not active yet")
+            return
+        }
         guard current.currentMode != mode else { return }
         do {
-            try displayService.setDisplayMode(mode, for: id)
+            try displayService.setDisplayMode(mode, for: current.id)
             refresh()
         } catch {
             logger.warning("Could not restore display mode after enable: \(error.localizedDescription)")
@@ -214,6 +238,10 @@ final class DisplayManagerViewModel {
     func toggleDisplay(_ display: DisplayInfo) {
         guard !isBusy else { return }
         let wasEnabled = display.isActive
+        let uuid = display.uuid
+        // A ghost is a disabled display that has left the online list; its row
+        // is synthesized from retained identity rather than live CG state.
+        let wasGhost = !wasEnabled && uuid.map { disabledGhosts[$0] != nil } ?? false
         // When re-enabling, macOS brings the display back at a default mode that
         // can drop HiDPI. Remember the mode it had so we can restore it.
         let modeToRestore: DisplayMode? = (!wasEnabled && !display.isPlaceholder) ? display.currentMode : nil
@@ -231,17 +259,33 @@ final class DisplayManagerViewModel {
                 }
                 // Retain identity so the row survives the display leaving the
                 // online list (both in-session and across an app restart).
-                if let uuid = display.uuid {
+                if let uuid {
                     disabledGhosts[uuid] = display.asDisabledGhost()
                     statePersistence.recordDisabled(uuid: uuid, id: display.id, name: display.name)
                 }
             } else {
-                do { try displayService.enableDisplay(display.id) } catch {
-                    errorMessage = error.localizedDescription
+                // Prefer the ID macOS assigns the UUID right now; the retained one
+                // is the fallback for when the UUID does not resolve while disabled.
+                let targetID = uuid.flatMap { displayService.displayID(forUUID: $0) } ?? display.id
+                do { try displayService.enableDisplay(targetID) } catch {
+                    if wasGhost, let uuid, displayService.displayID(forUUID: uuid) == nil {
+                        // The window server does not know this display any more
+                        // (unplugged and never returned). Its toggle could only
+                        // ever fail, so forget it instead of leaving a dead row.
+                        disabledGhosts[uuid] = nil
+                        statePersistence.recordEnabled(uuid: uuid)
+                        refresh()
+                        errorMessage = t("display_unreachable_forgotten_format", display.name)
+                    } else {
+                        errorMessage = error.localizedDescription
+                    }
                     return
                 }
-                if let uuid = display.uuid {
-                    disabledGhosts[uuid] = nil
+                // Record the user's intent right away, but leave the ghost row in
+                // place: refresh() drops it once the display is actually back in
+                // the online list, so the row cannot vanish if the display takes
+                // longer than the settle window to reappear.
+                if let uuid {
                     statePersistence.recordEnabled(uuid: uuid)
                 }
             }
@@ -249,8 +293,8 @@ final class DisplayManagerViewModel {
             await settleAndRefresh()
 
             // Restore the pre-disable mode if re-enabling reset it (e.g. HiDPI → non-HiDPI).
-            if let modeToRestore {
-                restoreMode(modeToRestore, for: display.id)
+            if let modeToRestore, let uuid {
+                restoreMode(modeToRestore, forUUID: uuid)
             }
 
             // Safety: re-enable a display if all got disabled
@@ -263,7 +307,6 @@ final class DisplayManagerViewModel {
                         do {
                             try displayService.enableDisplay(target.id)
                             if let uuid = target.uuid {
-                                disabledGhosts[uuid] = nil
                                 statePersistence.recordEnabled(uuid: uuid)
                             }
                             await settleAndRefresh()

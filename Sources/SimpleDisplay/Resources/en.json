@@ -40,6 +40,7 @@
   "disabling_format": "Disabling %@...",
   "re_enabling_format": "Re-enabling %@...",
   "all_disabled_error": "All displays disabled. Failed to re-enable: %@",
+  "display_unreachable_forgotten_format": "%@ could not be re-enabled and is no longer connected. It was removed from the list; reconnect it to use it again.",
   "creating_virtual": "Creating virtual display...",
   "reconfiguring": "Reconfiguring display...",
   "hidpi_suffix": "(HiDPI)",

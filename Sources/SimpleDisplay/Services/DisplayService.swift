@@ -17,7 +17,9 @@ final class DisplayService {
 
     // MARK: - Enumerate Displays
 
-    /// Fetches all online displays (including mirrored/disabled ones)
+    /// Fetches every display in `CGGetOnlineDisplayList`. A display disabled via
+    /// `CGSConfigureDisplayEnabled` normally drops out of that list entirely, so
+    /// it is *not* returned here; the view model keeps a ghost row for it.
     func fetchDisplays() -> [DisplayInfo] {
         var count: UInt32 = 0
         CGGetOnlineDisplayList(0, nil, &count)
@@ -48,8 +50,9 @@ final class DisplayService {
         nameMap: [CGDirectDisplayID: String],
         scaleMap: [CGDirectDisplayID: Double]
     ) -> DisplayInfo? {
-        // A display disabled via CGSConfigureDisplayEnabled stays online and
-        // addressable but is no longer active on the desktop.
+        // A display disabled via CGSConfigureDisplayEnabled normally leaves the
+        // online list altogether. Should one still be listed, CGDisplayIsActive
+        // is what tells it apart from an active display.
         let isEnabled = CGDisplayIsActive(displayID) != 0
 
         let displayUUID = uuid(for: displayID)
@@ -124,6 +127,17 @@ final class DisplayService {
             return nil
         }
         return CFUUIDCreateString(nil, cfUUID) as String?
+    }
+
+    /// Resolves a display UUID back to the `CGDirectDisplayID` macOS assigns it
+    /// right now, or nil when the window server does not know the display
+    /// (unplugged, or never seen this session). Anything that outlives a
+    /// reconfiguration (ghost rows, mode restore) must go through this instead
+    /// of reusing an old ID.
+    func displayID(forUUID uuidString: String) -> CGDirectDisplayID? {
+        guard let cfUUID = CFUUIDCreateFromString(nil, uuidString as CFString) else { return nil }
+        let id = CGDisplayGetDisplayIDFromUUID(cfUUID)
+        return id == kCGNullDirectDisplay ? nil : id
     }
 
     // MARK: - Change Resolution

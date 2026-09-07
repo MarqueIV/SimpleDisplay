@@ -40,6 +40,7 @@
   "disabling_format": "%@ wird deaktiviert...",
   "re_enabling_format": "%@ wird reaktiviert...",
   "all_disabled_error": "Alle Bildschirme deaktiviert. Reaktivierung fehlgeschlagen: %@",
+  "display_unreachable_forgotten_format": "%@ konnte nicht reaktiviert werden und ist nicht mehr angeschlossen. Er wurde aus der Liste entfernt; schließe ihn erneut an, um ihn wieder zu verwenden.",
   "creating_virtual": "Virtueller Bildschirm wird erstellt...",
   "reconfiguring": "Bildschirm wird neu konfiguriert...",
   "hidpi_suffix": "(HiDPI)",

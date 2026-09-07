@@ -68,10 +68,12 @@ NS_ASSUME_NONNULL_BEGIN
 //
 // CGSConfigureDisplayEnabled is an undocumented CoreGraphics Server API that
 // activates or deactivates a display at the window-server level. A disabled
-// display stays connected and addressable — it still appears in
-// CGGetOnlineDisplayList, but CGDisplayIsActive() returns false and it no
-// longer occupies any desktop space. This is the same mechanism `displayplacer`
-// uses for `enabled:false`, and unlike mirroring it is a true disable.
+// display stays connected but goes dark and no longer occupies any desktop
+// space. On current macOS it also drops out of CGGetOnlineDisplayList entirely
+// (observed on real hardware), so callers must retain the display's identity
+// themselves to re-enable it; its CGDirectDisplayID keeps resolving while the
+// display stays connected. This is the same mechanism `displayplacer` uses for
+// `enabled:false`, and unlike mirroring it is a true disable.
 //
 // Wrap calls in a CGBeginDisplayConfiguration / CGCompleteDisplayConfiguration
 // transaction, exactly like the public CGConfigureDisplay* APIs.

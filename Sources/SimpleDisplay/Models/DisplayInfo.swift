@@ -11,8 +11,9 @@ struct DisplayInfo: Identifiable, Equatable {
     let isBuiltIn: Bool
     let isMain: Bool
     /// True when the display is active on the desktop. False when it has been
-    /// disabled via `CGSConfigureDisplayEnabled` — the display is still
-    /// connected and addressable, just not part of the active desktop.
+    /// disabled via `CGSConfigureDisplayEnabled`. On current macOS a disabled
+    /// display drops out of the online list entirely, so `false` is mostly seen
+    /// on ghost rows the view model synthesizes from retained identity.
     let isEnabled: Bool
     let physicalSize: CGSize
     let backingScaleFactor: Double
@@ -20,6 +21,17 @@ struct DisplayInfo: Identifiable, Equatable {
     var isActive: Bool { isEnabled }
 
     func with(name: String, isVirtual: Bool) -> DisplayInfo {
+        DisplayInfo(
+            id: id, uuid: uuid, name: name, currentMode: currentMode,
+            availableModes: availableModes, isVirtual: isVirtual,
+            isBuiltIn: isBuiltIn, isMain: isMain, isEnabled: isEnabled,
+            physicalSize: physicalSize, backingScaleFactor: backingScaleFactor
+        )
+    }
+
+    /// A copy addressed by a different `CGDirectDisplayID`. Used when a ghost's
+    /// UUID resolves to a fresh ID after a topology change.
+    func with(id: CGDirectDisplayID) -> DisplayInfo {
         DisplayInfo(
             id: id, uuid: uuid, name: name, currentMode: currentMode,
             availableModes: availableModes, isVirtual: isVirtual,
