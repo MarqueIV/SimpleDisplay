@@ -39,6 +39,7 @@
   "enabling_format": "Activando %@...",
   "disabling_format": "Desactivando %@...",
   "re_enabling_format": "Reactivando %@...",
+  "removing_format": "Quitando %@...",
   "all_disabled_error": "Todas las pantallas desactivadas. Error al reactivar: %@",
   "display_unreachable_forgotten_format": "No se pudo reactivar %@: ya no está conectada. Se quitó de la lista; vuelve a conectarla para usarla.",
   "creating_virtual": "Creando pantalla virtual...",

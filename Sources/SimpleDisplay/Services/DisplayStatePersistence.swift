@@ -53,6 +53,13 @@ final class DisplayStatePersistence {
         writeConfigs(configs)
     }
 
+    /// Drops every persisted flag for `uuid`. Used when a virtual display is
+    /// destroyed: its UUID derives from a reusable serial slot, so stale flags
+    /// would otherwise apply to whichever display inherits that slot later.
+    func forget(uuid: String) {
+        writeConfigs(loadConfigs().filter { $0.uuid != uuid })
+    }
+
     func clearAll() {
         UserDefaults.standard.removeObject(forKey: persistenceKey)
     }

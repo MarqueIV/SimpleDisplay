@@ -344,10 +344,40 @@ final class DisplayManagerViewModel {
 
     func removeVirtualDisplay(_ display: DisplayInfo) {
         guard !isBusy else { return }
-        virtualService.removeVirtualDisplay(id: display.id)
-        virtualDisplayIDs.remove(display.id)
-        virtualDisplayNames.removeValue(forKey: display.id)
-        refresh()
+        isBusy = true
+        busyMessage = t("removing_format", display.name)
+        Task {
+            defer { isBusy = false; busyMessage = nil }
+            await forgetDisabledState(of: display)
+            virtualService.removeVirtualDisplay(id: display.id)
+            virtualDisplayIDs.remove(display.id)
+            virtualDisplayNames.removeValue(forKey: display.id)
+            refresh()
+        }
+    }
+
+    /// A virtual display about to be destroyed must not leave a disabled
+    /// footprint behind. Destroying a `CGVirtualDisplay` while it is disabled
+    /// leaves a phantom in the window server that the next display created with
+    /// the same serial inherits, mode included (seen on macOS 26: a 1600x900
+    /// HiDPI display came back as the destroyed one's 1280x720). So: re-enable
+    /// it first and wait for the topology to settle, drop its ghost row, and
+    /// forget its persisted flags, since its UUID derives from a reusable serial
+    /// slot and stale flags would apply to whichever display inherits the slot.
+    private func forgetDisabledState(of display: DisplayInfo) async {
+        if !display.isActive {
+            let targetID = display.uuid.flatMap { displayService.displayID(forUUID: $0) } ?? display.id
+            do {
+                try displayService.enableDisplay(targetID)
+                await settleAndRefresh()
+            } catch {
+                logger.warning("Could not re-enable '\(display.name)' before removing it: \(error.localizedDescription)")
+            }
+        }
+        if let uuid = display.uuid {
+            disabledGhosts[uuid] = nil
+            statePersistence.forget(uuid: uuid)
+        }
     }
 
     /// Reconfigure a virtual display by recreating it with new settings.
@@ -358,6 +388,7 @@ final class DisplayManagerViewModel {
         Task {
             defer { isBusy = false; busyMessage = nil }
             let displayName = name ?? display.name
+            await forgetDisabledState(of: display)
             virtualService.removeVirtualDisplay(id: display.id)
             virtualDisplayIDs.remove(display.id)
             virtualDisplayNames.removeValue(forKey: display.id)
@@ -577,6 +608,11 @@ final class DisplayManagerViewModel {
     private func applyPersistedState() async {
         let saved = statePersistence.loadAll()
         guard !saved.isEmpty else { return }
+
+        // Virtual displays restored at launch, and displays re-attached on wake,
+        // can take a moment to show up in the online list. Deciding on a partial
+        // snapshot would silently skip them, so wait for the topology to settle.
+        await settleAndRefresh()
 
         let savedByUUID = Dictionary(uniqueKeysWithValues: saved.map { ($0.uuid, $0) })
 
