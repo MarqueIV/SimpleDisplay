@@ -49,7 +49,7 @@
   "how_virtual_title": "Monitores virtuales",
   "how_virtual_desc": "Usa la API privada <code style=\"color:var(--blue);background:rgba(30,144,255,0.1);padding:2px 6px;border-radius:4px;font-size:12px;\">CGVirtualDisplay</code> de Apple para crear pantallas que macOS trata como monitores reales — útil para compartir pantalla a resoluciones específicas, probar diseños responsivos o mantener apps en una pantalla \"oculta\".",
   "how_disable_title": "Desactivar una pantalla",
-  "how_disable_desc": "La duplica a otra pantalla activa mediante <code style=\"color:var(--blue);background:rgba(30,144,255,0.1);padding:2px 6px;border-radius:4px;font-size:12px;\">CGConfigureDisplayMirrorOfDisplay</code>, apagándola efectivamente. Esto se revierte eliminando la relación de duplicación.",
+  "how_disable_desc": "La desactiva a nivel del servidor de ventanas mediante <code style=\"color:var(--blue);background:rgba(30,144,255,0.1);padding:2px 6px;border-radius:4px;font-size:12px;\">CGSConfigureDisplayEnabled</code>, la misma API privada que usa displayplacer. La pantalla se apaga y desaparece del escritorio sin desconectarse; SimpleDisplay conserva una fila atenuada para volver a encenderla.",
   "how_why_title": "¿Por qué APIs privadas?",
   "how_why_desc": "Estas capacidades no están disponibles a través de frameworks públicos. SimpleDisplay no puede distribuirse en la Mac App Store, pero puede hacer cosas que ninguna app de la App Store puede.",
   "auto_label": "Automatización",

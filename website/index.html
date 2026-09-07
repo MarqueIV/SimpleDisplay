@@ -476,7 +476,7 @@
                 </div>
                 <div class="how-detail">
                     <h4 data-i18n="how_disable_title">Disabling a display</h4>
-                    <p data-i18n-html="how_disable_desc">Mirrors it to another active display via <code style="color:var(--blue);background:rgba(30,144,255,0.1);padding:2px 6px;border-radius:4px;font-size:12px;">CGConfigureDisplayMirrorOfDisplay</code>, effectively turning it off. This is reversed by removing the mirror relationship.</p>
+                    <p data-i18n-html="how_disable_desc">Deactivates it at the window-server level via <code style="color:var(--blue);background:rgba(30,144,255,0.1);padding:2px 6px;border-radius:4px;font-size:12px;">CGSConfigureDisplayEnabled</code>, the same private API displayplacer uses. The display goes dark and leaves the desktop while staying connected; SimpleDisplay keeps a greyed-out row so you can turn it back on.</p>
                 </div>
                 <div class="how-detail">
                     <h4 data-i18n="how_why_title">Why private APIs?</h4>
@@ -494,9 +494,9 @@
                         <span style="color:#555570">// Virtual display creation</span><br>
                         <span style="color:var(--purple)">let</span> <span style="color:var(--text)">desc</span> = <span style="color:var(--blue)">CGVirtualDisplayDescriptor</span>()<br>
                         <span style="color:var(--text)">desc</span>.<span style="color:var(--text)">name</span> = <span style="color:var(--green)">"iPad Pro 11"</span><br><br>
-                        <span style="color:#555570">// Display toggling via mirror</span><br>
-                        <span style="color:var(--blue)">CGConfigureDisplayMirrorOfDisplay</span>(<br>
-                        &nbsp;&nbsp;<span style="color:var(--text)">config</span>, <span style="color:var(--text)">targetID</span>, <span style="color:var(--text)">mirrorID</span><br>
+                        <span style="color:#555570">// Real display disable</span><br>
+                        <span style="color:var(--blue)">CGSConfigureDisplayEnabled</span>(<br>
+                        &nbsp;&nbsp;<span style="color:var(--text)">config</span>, <span style="color:var(--text)">displayID</span>, <span style="color:var(--purple)">false</span><br>
                         )
                     </div>
                 </div>
