@@ -338,8 +338,11 @@ final class DisplayManagerViewModel {
         // is synthesized from retained identity rather than live CG state.
         let wasGhost = !wasEnabled && uuid.map { disabledGhosts[$0] != nil } ?? false
         // When re-enabling, macOS brings the display back at a default mode that
-        // can drop HiDPI. Remember the mode it had so we can restore it.
-        let modeToRestore: DisplayMode? = (!wasEnabled && !display.isPlaceholder) ? display.currentMode : nil
+        // can drop HiDPI. Remember the mode it had so we can restore it; a row
+        // rebuilt after a relaunch has no live mode, so use the persisted one.
+        let modeToRestore: DisplayMode? = !wasEnabled
+            ? (display.isPlaceholder ? uuid.flatMap { statePersistence.state(forUUID: $0)?.lastMode } : display.currentMode)
+            : nil
         isBusy = true
         busyMessage = wasEnabled
             ? t("disabling_format", display.name)
@@ -362,7 +365,7 @@ final class DisplayManagerViewModel {
                     // Only a confirmed headless disable may be re-applied on launch.
                     statePersistence.recordDisabled(
                         uuid: uuid, id: display.id, name: display.name,
-                        headless: goesHeadless && headless
+                        headless: goesHeadless && headless, lastMode: display.currentMode
                     )
                     if goesHeadless && !headless {
                         startHeadlessCountdown(uuid: uuid, id: display.id, name: display.name)
@@ -472,6 +475,7 @@ final class DisplayManagerViewModel {
         busyMessage = t("enabling_format", pending.name)
         defer { isBusy = false; busyMessage = nil }
         let targetID = displayService.displayID(forUUID: pending.uuid) ?? pending.id
+        let lastMode = statePersistence.state(forUUID: pending.uuid)?.lastMode
         do {
             try displayService.enableDisplay(targetID)
             statePersistence.recordEnabled(uuid: pending.uuid)
@@ -480,6 +484,7 @@ final class DisplayManagerViewModel {
             errorMessage = error.localizedDescription
         }
         await settleAndRefresh()
+        if let lastMode { restoreMode(lastMode, forUUID: pending.uuid) }
     }
 
     // MARK: - Mirror
@@ -505,12 +510,15 @@ final class DisplayManagerViewModel {
         Task {
             defer { isBusy = false; busyMessage = nil }
             if display.isMirrored {
+                let lastMode = display.uuid.flatMap { statePersistence.state(forUUID: $0)?.lastMode }
                 do { try displayService.unmirrorDisplay(display.id) } catch {
                     errorMessage = error.localizedDescription
                     return
                 }
                 if let uuid = display.uuid { statePersistence.recordUnmirror(uuid: uuid) }
                 await settleAndRefresh()
+                // A mirror slave ran at the master's mode; give it its own back.
+                if let lastMode, let uuid = display.uuid { restoreMode(lastMode, forUUID: uuid) }
             } else {
                 await mirror(display, onto: nil)
             }
@@ -561,7 +569,7 @@ final class DisplayManagerViewModel {
             return
         }
         if let uuid = display.uuid, let targetUUID = displayService.uuid(for: targetID) {
-            statePersistence.recordMirror(uuid: uuid, of: targetUUID)
+            statePersistence.recordMirror(uuid: uuid, of: targetUUID, lastMode: display.currentMode)
         }
     }
 
@@ -570,18 +578,23 @@ final class DisplayManagerViewModel {
     /// kept unless `forget` is set: turning a display off is not a change of
     /// mind about mirroring.
     private func dissolveMirrors(involving display: DisplayInfo, forget: Bool = false) async {
-        var touched = false
+        var released: [(uuid: String, lastMode: DisplayMode?)] = []
         for slave in displays where slave.mirroredToDisplayID == display.id {
-            if (try? displayService.unmirrorDisplay(slave.id)) != nil {
-                touched = true
-                if forget, let uuid = slave.uuid { statePersistence.recordUnmirror(uuid: uuid) }
+            if (try? displayService.unmirrorDisplay(slave.id)) != nil, let uuid = slave.uuid {
+                released.append((uuid, statePersistence.state(forUUID: uuid)?.lastMode))
+                if forget { statePersistence.recordUnmirror(uuid: uuid) }
             }
         }
-        if display.isMirrored, (try? displayService.unmirrorDisplay(display.id)) != nil {
-            touched = true
-            if forget, let uuid = display.uuid { statePersistence.recordUnmirror(uuid: uuid) }
+        if display.isMirrored, (try? displayService.unmirrorDisplay(display.id)) != nil, let uuid = display.uuid {
+            released.append((uuid, statePersistence.state(forUUID: uuid)?.lastMode))
+            if forget { statePersistence.recordUnmirror(uuid: uuid) }
         }
-        if touched { await settleAndRefresh() }
+        guard !released.isEmpty else { return }
+        await settleAndRefresh()
+        // Former slaves ran at their master's mode; give each its own back.
+        for item in released {
+            if let lastMode = item.lastMode { restoreMode(lastMode, forUUID: item.uuid) }
+        }
     }
 
     // MARK: - Virtual Display Management
@@ -931,11 +944,13 @@ final class DisplayManagerViewModel {
         if visibleDisplays.isEmpty {
             for (uuid, ghost) in disabledGhosts where !ghost.isVirtual && savedByUUID[uuid]?.headless != true {
                 let targetID = displayService.displayID(forUUID: uuid) ?? ghost.id
+                let lastMode = savedByUUID[uuid]?.lastMode
                 do {
                     try displayService.enableDisplay(targetID)
                     statePersistence.recordEnabled(uuid: uuid)
                     logger.warning("Recovered '\(ghost.name)': it was off with no visible display left and headless was never confirmed")
                     await settleAndRefresh()
+                    if let lastMode { restoreMode(lastMode, forUUID: uuid) }
                 } catch {
                     logger.warning("Could not recover '\(ghost.name)': \(error.localizedDescription)")
                 }
@@ -992,7 +1007,7 @@ final class DisplayManagerViewModel {
                 // Capture identity before the display leaves the online list, and
                 // refresh persisted id/name in case they were missing.
                 disabledGhosts[uuid] = display.asDisabledGhost()
-                statePersistence.recordDisabled(uuid: uuid, id: display.id, name: display.name, headless: confirmedHeadless)
+                statePersistence.recordDisabled(uuid: uuid, id: display.id, name: display.name, headless: confirmedHeadless, lastMode: display.currentMode)
                 logger.info("Restored disabled state on '\(display.name)'")
                 await settleAndRefresh()
             } catch {

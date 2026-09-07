@@ -113,7 +113,7 @@ struct ModeGroup: Identifiable {
     }
 }
 
-struct DisplayMode: Identifiable, Equatable, Hashable {
+struct DisplayMode: Identifiable, Equatable, Hashable, Codable {
     var id: String { "\(width)x\(height)@\(refreshRate)_\(isHiDPI ? "hi" : "lo")" }
     let width: Int
     let height: Int

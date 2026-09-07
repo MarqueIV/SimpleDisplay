@@ -20,6 +20,11 @@ struct PersistedDisplayState: Codable {
     var headless: Bool?
     /// UUID of the display this one mirrors, when the user chose to mirror it.
     var mirrorOf: String?
+    /// The mode the display had when it was turned off. A display re-enabled from
+    /// a row rebuilt after a relaunch has no live mode to restore otherwise, and
+    /// macOS may bring it back in another one (seen: 1280x720 for a 1920x1080
+    /// console).
+    var lastMode: DisplayMode?
 }
 
 @MainActor
@@ -35,11 +40,12 @@ final class DisplayStatePersistence {
         loadConfigs().first { $0.uuid == uuid }
     }
 
-    func recordDisabled(uuid: String, id: CGDirectDisplayID, name: String, headless: Bool = false) {
+    func recordDisabled(uuid: String, id: CGDirectDisplayID, name: String, headless: Bool = false, lastMode: DisplayMode? = nil) {
         upsert(uuid: uuid) {
             $0.isDisabled = true
             $0.lastKnownID = id
             $0.name = name
+            if let lastMode, lastMode.width > 0 { $0.lastMode = lastMode }
             $0.headless = headless ? true : nil
             // A disabled display shows nothing, so any mirror choice is moot.
             $0.mirrorOf = nil
@@ -53,8 +59,15 @@ final class DisplayStatePersistence {
         }
     }
 
-    func recordMirror(uuid: String, of targetUUID: String) {
-        upsert(uuid: uuid) { $0.mirrorOf = targetUUID }
+    /// `lastMode` is the mode the display had before mirroring: a mirror slave
+    /// adopts the master's mode and macOS does not reliably give the old one
+    /// back when the mirror is dissolved (seen: 1920x1080 -> 1280x720 -> 800x600
+    /// over two mirror cycles).
+    func recordMirror(uuid: String, of targetUUID: String, lastMode: DisplayMode? = nil) {
+        upsert(uuid: uuid) {
+            $0.mirrorOf = targetUUID
+            if let lastMode, lastMode.width > 0 { $0.lastMode = lastMode }
+        }
     }
 
     func recordUnmirror(uuid: String) {
