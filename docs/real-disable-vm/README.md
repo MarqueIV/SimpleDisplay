@@ -22,6 +22,9 @@ Evidencia en esta carpeta:
 - `run8-serial-persistente-y-cli.log` — tercera tanda: serial persistente por virtual y
   subcomandos nuevos del CLI (`disable --headless`, `enable`, `mirror`, `unmirror`):
   **67 PASS, 0 FAIL**.
+- `run10-modo-configurado.log` — cuarta tanda: la app reaplica el modo configurado de cada
+  virtual cuando macOS lo levanta en el modo recordado de su identidad (v1.6.2):
+  **70 PASS, 0 FAIL**.
 
 ## Que puede y que no puede probar la VM
 
@@ -49,7 +52,7 @@ reproduce:
 | A | Apaga un Twin; el otro Twin conserva nombre y fila; reenciende | El apagado sale de `CGGetOnlineDisplayList` (CG), su fila queda como fantasma con nombre `Twin`; al encender vuelve online y activo |
 | B | Apaga y enciende Retina | Vuelve **en HiDPI 1600x900** (restauracion de modo por UUID) |
 | C | Apaga Retina, `pkill` + relanzar, enciende desde la fila fantasma | Tras relanzar Retina sigue apagada y fuera de la lista online (log: `Restored disabled state`); `enable?name=Retina` la trae de vuelta en HiDPI |
-| D | Apaga Twin#2, lo **quita** (`remove`), relanza | La fila desaparece al quitarlo, la persistencia olvida su UUID, tras relanzar quedan 3 filas encendidas y **Retina conserva su UUID y 1600x900 HiDPI** (run 8; en runs 4-7 heredaba el slot de Twin#2, ver abajo) |
+| D | Apaga Twin#2, lo **quita** (`remove`), relanza; crea `Retina2` 1600x900 HiDPI sobre el slot liberado | La fila desaparece al quitarlo, la persistencia olvida su UUID, tras relanzar quedan 3 filas encendidas y **Retina conserva su UUID y 1600x900 HiDPI** (run 8; en runs 4-7 heredaba el slot de Twin#2). `Retina2` hereda la identidad del slot 2, cuyo modo recordado es 1280x720, y aun asi **arranca en 1600x900 HiDPI** (run 9+: log `Re-applied configured mode 1600x900 ... (came up as 1280x720)`) |
 | H | Siembra en UserDefaults dos fantasmas de "una sesion previa": `Phantom` con `lastKnownID` = id vivo de la consola, `Orphan` con id 9999 | `Phantom` se descarta (log: `Dropping ghost row ... its retained ID 1 now belongs to ...`) y la consola **no** se toca; `Orphan` aparece como placeholder apagado y al intentar encenderlo se olvida (fila y flag) |
 | E | Apaga el display **main** (la consola) | Main se transfiere a un virtual antes, la consola sale de la lista online; al encender vuelve y todo queda activo |
 | F | `pmset sleepnow` | No soportado en la VM (INFO) |
@@ -98,13 +101,24 @@ tanto `1280x720` como `1600x900@2x` y macOS elegia el recordado. Sobrevivia a un
 del guest. Consecuencias: un virtual podia perder HiDPI tras un reinicio, y los flags
 persistidos por UUID (apagado/main/espejo) de un virtual podian aplicarse a otro.
 
-Arreglo (commit `fix: serial persistente por display virtual`): el serial se guarda en
-`VirtualDisplayConfig.serial`; al restaurar, cada config recupera el suyo, y al reconfigurar
-(quitar + recrear) se conserva. Un slot nuevo es el mas bajo que no este vivo **ni reservado
-por otra config guardada**. Configs de versiones anteriores sin serial reciben uno en el
-primer arranque y se re-guardan. Verificado en run 8: tras quitar Twin#2 y relanzar,
-Retina conserva `E3BD08CD-…` y 1600x900 HiDPI. La acotacion de perfiles ColorSync se
-mantiene (misma cantidad de identidades, ahora estables).
+Arreglo en dos partes:
+
+1. **Identidad estable** (v1.6.1, `fix: serial persistente por display virtual`): el serial se
+   guarda en `VirtualDisplayConfig.serial`; al restaurar, cada config recupera el suyo, y al
+   reconfigurar (quitar + recrear) se conserva. Un slot nuevo es el mas bajo que no este vivo
+   **ni reservado por otra config guardada**. Configs de versiones anteriores sin serial
+   reciben uno en el primer arranque y se re-guardan. Verificado en run 8: tras quitar Twin#2 y
+   relanzar, Retina conserva `E3BD08CD-…` y 1600x900 HiDPI. La acotacion de perfiles ColorSync
+   se mantiene (misma cantidad de identidades, ahora estables).
+2. **Modo configurado reaplicado** (v1.6.2, `Re-apply a virtual display's configured mode...`):
+   la identidad estable no basta cuando el modo recordado ya esta grabado (Sam lo vio en su
+   Mac: un virtual "Ultrawide 3440x1440", serial 1, levantado en 1720x720 pese a que
+   3440x1440 estaba en su lista de modos; era ademas el display main, y `applySettings` de
+   `CGVirtualDisplay` no conmuta el modo de un main sin un commit de configuracion). Tras el
+   asentamiento al arrancar, al crear y al reconfigurar, la app compara el modo vivo de cada
+   virtual con su config y reaplica ancho, alto e HiDPI con `CGConfigureDisplayWithDisplayMode`
+   (`.permanently`, asi macOS memoriza el modo correcto). Verificado en runs 9 y 10 con
+   `Retina2` sobre el slot 2.
 
 ### Infraestructura de prueba
 
@@ -204,5 +218,7 @@ sshpass -p admin scp -o StrictHostKeyChecking=no /tmp/cgprobe admin@$IP:/tmp/cgp
 docs/real-disable-vm/test.sh $IP /tmp/real-disable.log
 ```
 
-Esperado: `PASS=67 FAIL=0` y una linea `INFO` (`sleepnow` no soportado en la VM). Algunos
+Esperado: `PASS=70 FAIL=0` y una linea `INFO` (`sleepnow` no soportado en la VM). Algunos
 pasos van por `simpledisplayctl` (deploy.sh lo instala en `/usr/local/bin`) para cubrir el CLI.
+La consola de Tart no siempre arranca en 1920x1080 (se vio 1720x768 segun el tamano inicial
+de la ventana); el guion compara con el modo previo al espejo, no con un valor fijo.

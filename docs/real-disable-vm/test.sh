@@ -157,6 +157,16 @@ check "tras relanzar: 3 filas encendidas" "$ST" "len(items)==3 and all(d['on'] f
 check "Retina sigue 1600x900 HiDPI tras relanzar (serial persistente: no hereda el slot de Twin#2)" "$ST" "[d for d in items if d['name']=='Retina'][0]['hidpi'] and [d for d in items if d['name']=='Retina'][0]['width']==1600"
 RET_UUID_NOW=$(probe | grep "px=3200x1800" | sed 's/.*uuid=\([^ ]*\).*/\1/'); check_str "Retina conserva su UUID (identidad) tras relanzar" "$RET_UUID_NOW" "$RET_UUID"
 applog 60s 15
+# El slot 2 (el de Twin#2) queda libre y el WindowServer recuerda 1280x720 para esa
+# identidad: un virtual nuevo con otra config debe salir igual en SU modo configurado.
+url "create?width=1600&height=900&name=Retina2&hidpi=true"; sleep 8
+snap D4
+check "Retina2 (hereda el slot de Twin#2) arranca en 1600x900 HiDPI, no en el 1280x720 recordado" "$ST" "[d for d in items if d['name']=='Retina2'][0]['hidpi'] and [d for d in items if d['name']=='Retina2'][0]['width']==1600"
+R2=$(probe | grep -c "px=3200x1800"); check_str "CG: dos displays a 3200x1800 px (Retina y Retina2)" "$R2" "2"
+url "remove?name=Retina2"; sleep 6
+snap D5
+check "Retina2 quitado: quedan 3 filas encendidas" "$ST" "len(items)==3 and all(d['on'] for d in items)"
+applog 60s 10
 TWIN1=$(q "$ST" "[d['id'] for d in items if d['name']=='Twin'][0]")
 RET=$(q "$ST" "[d['id'] for d in items if d['name']=='Retina'][0]")
 CONSOLE=$(q "$ST" "[d['id'] for d in items if not d['virtual']][0]")
@@ -244,7 +254,7 @@ wscheck() { local ws; ws=$($SSH 'pgrep -x WindowServer'); check_str "$1: el Wind
 snap M0
 CONSOLE=$(q "$ST" "[d['id'] for d in items if not d['virtual'] and d['width']>0][0]")
 TWIN1=$(q "$ST" "[d['id'] for d in items if d['name']=='Twin'][0]")
-MAIN0=$(q "$ST" "[d['id'] for d in items if d['main']][0]"); log "consola=$CONSOLE twin=$TWIN1 main=$MAIN0"
+MAIN0=$(q "$ST" "[d['id'] for d in items if d['main']][0]"); CONSOLE_W0=$(q "$ST" "[d for d in items if d['id']==$CONSOLE][0]['width']"); log "consola=$CONSOLE (${CONSOLE_W0}px de ancho) twin=$TWIN1 main=$MAIN0"
 url "mirror?id=$TWIN1"; sleep 6
 snap M1
 check "espejar un VIRTUAL se rechaza: Twin sigue sin espejo" "$ST" "[d for d in items if d['id']==$TWIN1][0]['mirrorOf']==0"
@@ -265,7 +275,7 @@ check "tras relanzar, la consola vuelve espejada a un display encendido" "$ST" "
 ctl unmirror --id $CONSOLE; sleep 8
 snap M4
 check "sin espejos" "$ST" "all(d['mirrorOf']==0 for d in items)"
-check "la consola volvio a su modo nativo 1920x1080" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['width']==1920"
+check "la consola volvio a su modo previo al espejo (${CONSOLE_W0}px)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['width']==$CONSOLE_W0"
 P=$(persisted); check_str "persistencia sin mirrorOf" "$(python3 -c 'import sys,json; d=[x for x in json.loads(sys.argv[1]) if x.get("mirrorOf")]; print(len(d))' "$P")" "0"
 url "mirror?id=$CONSOLE"; sleep 10
 snap M5
