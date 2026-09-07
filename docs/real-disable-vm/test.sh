@@ -71,9 +71,14 @@ log "guest: $($SSH 'sw_vers -productVersion; uname -m' | tr '\n' ' ')"
 
 sec "S0 reset + baseline"
 log "-> pkill; defaults delete app.simpledisplay; open -a SimpleDisplay"
-$SSH 'pkill -x SimpleDisplay; sleep 1; defaults delete app.simpledisplay 2>/dev/null; rm -f /tmp/simpledisplay-status.json; open -a SimpleDisplay'; sleep 7
+$SSH 'pkill -x SimpleDisplay; sleep 1; defaults delete app.simpledisplay 2>/dev/null; rm -f /tmp/simpledisplay-status.json; open -a SimpleDisplay'; sleep 9
 snap S0
 CONSOLE=$(q "$ST" "[d['id'] for d in items if not d['virtual']][0]")
+# Modo nativo de la consola = el mayor que ofrece (el actual puede venir degradado por
+# preferencias del WindowServer de corridas anteriores).
+CONSOLE_W_BOOT=$(probe | grep "PROBE id=$CONSOLE " | grep -o 'modes=\[[^]]*\]' | tr ',' '\n' | grep -v '@2x' | sed 's/[^0-9x]//g' | awk -F x 'NF==2{print $1}' | sort -n | tail -1)
+log "consola id=$CONSOLE nativo=${CONSOLE_W_BOOT}px actual=$(q "$ST" "items[0]['width']")px"
+check "la consola arranca en su modo nativo" "$ST" "items[0]['width']==$CONSOLE_W_BOOT"
 check "solo la consola de la VM, encendida y main" "$ST" "len(items)==1 and items[0]['on'] and items[0]['main']"
 log "consola id=$CONSOLE"
 
@@ -115,6 +120,32 @@ snap B2
 check "Retina encendida" "$ST" "[d for d in items if d['id']==$RET][0]['on']"
 check "Retina sigue HiDPI 1600x900" "$ST" "[d for d in items if d['id']==$RET][0]['hidpi'] and [d for d in items if d['id']==$RET][0]['width']==1600"
 applog 40s 12
+
+sec "Z modo elegido (zoom): via URL y CLI, persiste, sobrevive a cambios de topologia y al relanzar"
+ctl mode --name Retina --width 800 --height 600 --hidpi; sleep 7
+snap Z1
+check "Retina cambio a 800x600 HiDPI (zoom elegido)" "$ST" "[d for d in items if d['name']=='Retina'][0]['width']==800 and [d for d in items if d['name']=='Retina'][0]['hidpi']"
+url "disable?id=$TWIN1"; sleep 8
+snap Z2
+check "tras apagar otro display, Retina conserva el modo elegido 800x600 HiDPI" "$ST" "[d for d in items if d['name']=='Retina'][0]['width']==800 and [d for d in items if d['name']=='Retina'][0]['hidpi']"
+url "enable?id=$TWIN1"; sleep 9
+snap Z3
+check "tras encenderlo, Retina sigue en 800x600 HiDPI" "$ST" "[d for d in items if d['name']=='Retina'][0]['width']==800"
+log "-> relanzar: el modo elegido se reaplica"
+$SSH 'pkill -x SimpleDisplay; sleep 2; open -a SimpleDisplay'; sleep 14
+snap Z4
+check "tras relanzar, Retina vuelve en 800x600 HiDPI" "$ST" "[d for d in items if d['name']=='Retina'][0]['width']==800 and [d for d in items if d['name']=='Retina'][0]['hidpi']"
+url "mode?name=Retina&width=1600&height=900&hidpi=true"; sleep 7
+snap Z5
+check "de vuelta al modo del panel 1600x900 HiDPI" "$ST" "[d for d in items if d['name']=='Retina'][0]['width']==1600 and [d for d in items if d['name']=='Retina'][0]['hidpi']"
+P=$(persisted); log "   (mode persistido se limpia al volver al panel: comprobado via status tras relanzar en C)"
+url "mode?name=Retina&width=4000&height=3000"; sleep 5
+snap Z6
+check "un modo que el display no ofrece se rechaza sin cambiar nada" "$ST" "[d for d in items if d['name']=='Retina'][0]['width']==1600"
+TWIN1=$(q "$ST" "[d['id'] for d in items if d['name']=='Twin'][0]")
+TWIN2=$(q "$ST" "[d['id'] for d in items if d['name']=='Twin'][1]")
+RET=$(q "$ST" "[d['id'] for d in items if d['name']=='Retina'][0]")
+applog 90s 12
 
 sec "C reinicio de la app con Retina apagada; reactivar desde la fila fantasma"
 url "disable?id=$RET"; sleep 7
@@ -206,6 +237,7 @@ url "disable?id=$CONSOLE"; sleep 9
 snap E1
 check "consola apagada (fantasma)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']==False"
 check "otro display es main ahora" "$ST" "len([d for d in items if d['main'] and d['id']!=$CONSOLE])==1"
+check "con el fisico apagado, Retina conserva 1600x900 HiDPI (conjunto de displays distinto)" "$ST" "[d for d in items if d['name']=='Retina'][0]['width']==1600 and [d for d in items if d['name']=='Retina'][0]['hidpi']"
 MAINPROBE=$(probe | grep -c "PROBE id=$CONSOLE "); check_str "CG: consola fuera de la lista online (0=si)" "$MAINPROBE" "0"
 url "enable?id=$CONSOLE"; sleep 9
 snap E2
@@ -237,14 +269,16 @@ log "-> relanzar la app: un headless confirmado se reaplica"
 $SSH 'pkill -x SimpleDisplay; sleep 2; open -a SimpleDisplay'; sleep 14
 snap G5
 check "tras relanzar la consola sigue apagada (headless confirmado)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']==False"
-url "enable?id=$CONSOLE"; sleep 8
+url "enable?id=$CONSOLE"; sleep 9
 snap G6
 check "consola encendida de nuevo" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']"
+check "reencendida desde la fila reconstruida, la consola recupera su modo de arranque (${CONSOLE_W_BOOT}px; modo persistido al apagarla)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['width']==$CONSOLE_W_BOOT"
 url "disable?id=$CONSOLE"; sleep 4
 log "-> pkill DURANTE la cuenta atras (simula crash); relanzar"
 $SSH 'pkill -x SimpleDisplay; sleep 2; open -a SimpleDisplay'; sleep 16
 snap G7
 check "al arrancar sin pantalla visible y sin headless confirmado, la consola se recupera sola" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']"
+check "y vuelve en su modo de arranque (${CONSOLE_W_BOOT}px)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['width']==$CONSOLE_W_BOOT"
 P=$(persisted); check_str "persistencia limpia tras la recuperacion (isDisabled=false)" "$(hl "$P" "$CONSOLE_UUID" isDisabled)" "False"
 applog 120s 20
 
@@ -275,7 +309,7 @@ check "tras relanzar, la consola vuelve espejada a un display encendido" "$ST" "
 ctl unmirror --id $CONSOLE; sleep 8
 snap M4
 check "sin espejos" "$ST" "all(d['mirrorOf']==0 for d in items)"
-check "la consola volvio a su modo previo al espejo (${CONSOLE_W0}px)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['width']==$CONSOLE_W0"
+check "la consola volvio a su modo previo al espejo (${CONSOLE_W0}px; restaurado por la app)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['width']==$CONSOLE_W0"
 P=$(persisted); check_str "persistencia sin mirrorOf" "$(python3 -c 'import sys,json; d=[x for x in json.loads(sys.argv[1]) if x.get("mirrorOf")]; print(len(d))' "$P")" "0"
 url "mirror?id=$CONSOLE"; sleep 10
 snap M5
@@ -284,6 +318,7 @@ url "disable?id=$TARGET"; sleep 10
 snap M6
 wscheck "tras apagar el destino de un espejo"
 check "apagar el destino disuelve el espejo primero: la consola queda sin espejo y encendida" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['mirrorOf']==0 and [d for d in items if d['id']==$CONSOLE][0]['on']"
+check "y recupera su modo previo al espejo (${CONSOLE_W0}px)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['width']==$CONSOLE_W0"
 check "el destino quedo apagado" "$ST" "[d for d in items if d['id']==$TARGET][0]['on']==False"
 url "enable?id=$TARGET"; sleep 9
 snap M7

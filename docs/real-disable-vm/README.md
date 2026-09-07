@@ -25,6 +25,11 @@ Evidencia en esta carpeta:
 - `run10-modo-configurado.log` — cuarta tanda: la app reaplica el modo configurado de cada
   virtual cuando macOS lo levanta en el modo recordado de su identidad (v1.6.2):
   **70 PASS, 0 FAIL**.
+- `run13-zoom-espejo-y-modos.log` — quinta tanda (v1.6.3): modo elegido por fila/URL/CLI,
+  persistente y reaplicado tras cada cambio de topologia y al relanzar; el virtual conserva su
+  modo con el fisico apagado; un display recupera su modo propio al quitar un espejo o al
+  reencenderlo desde una fila reconstruida; commits permanentes solo sin espejos activos:
+  **81 PASS, 0 FAIL**.
 
 ## Que puede y que no puede probar la VM
 
@@ -51,10 +56,11 @@ reproduce:
 | S0/S1 | Reset de UserDefaults; crea `Twin`, `Twin` (1280x720) y `Retina` (1600x900 HiDPI) | 4 filas encendidas, Retina HiDPI |
 | A | Apaga un Twin; el otro Twin conserva nombre y fila; reenciende | El apagado sale de `CGGetOnlineDisplayList` (CG), su fila queda como fantasma con nombre `Twin`; al encender vuelve online y activo |
 | B | Apaga y enciende Retina | Vuelve **en HiDPI 1600x900** (restauracion de modo por UUID) |
+| Z | `simpledisplayctl mode --name Retina --width 800 --height 600 --hidpi`; apaga y enciende otro display; relanza; vuelve al modo del panel por URL; pide un modo inexistente | El modo elegido se aplica, **sobrevive** al apagado/encendido de otro display y al relanzamiento, `mode` de vuelta a 1600x900 HiDPI funciona, y un modo que el display no ofrece se rechaza sin tocar nada |
 | C | Apaga Retina, `pkill` + relanzar, enciende desde la fila fantasma | Tras relanzar Retina sigue apagada y fuera de la lista online (log: `Restored disabled state`); `enable?name=Retina` la trae de vuelta en HiDPI |
 | D | Apaga Twin#2, lo **quita** (`remove`), relanza; crea `Retina2` 1600x900 HiDPI sobre el slot liberado | La fila desaparece al quitarlo, la persistencia olvida su UUID, tras relanzar quedan 3 filas encendidas y **Retina conserva su UUID y 1600x900 HiDPI** (run 8; en runs 4-7 heredaba el slot de Twin#2). `Retina2` hereda la identidad del slot 2, cuyo modo recordado es 1280x720, y aun asi **arranca en 1600x900 HiDPI** (run 9+: log `Re-applied configured mode 1600x900 ... (came up as 1280x720)`) |
 | H | Siembra en UserDefaults dos fantasmas de "una sesion previa": `Phantom` con `lastKnownID` = id vivo de la consola, `Orphan` con id 9999 | `Phantom` se descarta (log: `Dropping ghost row ... its retained ID 1 now belongs to ...`) y la consola **no** se toca; `Orphan` aparece como placeholder apagado y al intentar encenderlo se olvida (fila y flag) |
-| E | Apaga el display **main** (la consola) | Main se transfiere a un virtual antes, la consola sale de la lista online; al encender vuelve y todo queda activo |
+| E | Apaga el display **main** (la consola) | Main se transfiere a un virtual antes, la consola sale de la lista online; **Retina conserva 1600x900 HiDPI con el fisico apagado** (run 11: macOS guarda un modo distinto por conjunto de displays conectados; en la Mac de Sam el ultrawide caia a 1720x720 al apagar el monitor); al encender vuelve y todo queda activo |
 | F | `pmset sleepnow` | No soportado en la VM (INFO) |
 
 ## Hallazgos
@@ -119,6 +125,37 @@ Arreglo en dos partes:
    virtual con su config y reaplica ancho, alto e HiDPI con `CGConfigureDisplayWithDisplayMode`
    (`.permanently`, asi macOS memoriza el modo correcto). Verificado en runs 9 y 10 con
    `Retina2` sobre el slot 2.
+3. **Tras cada cambio de topologia** (v1.6.3): macOS guarda ese modo recordado **por conjunto
+   de displays conectados**, asi que apagar el fisico ("solo el virtual" es otro conjunto)
+   volvia a levantar el virtual en 1720x720 aunque al arrancar se hubiera corregido. La
+   reaplicacion corre ahora al final de cada `settleAndRefresh()` (apagar, encender, espejo,
+   main, quitar, despertar). El modo elegido por el usuario en el menu de la fila
+   (`modeWidth/modeHeight/modeHiDPI` en la config) se reaplica igual. Verificado en run 11
+   (escenarios Z y E).
+
+### Dos hallazgos mas de la quinta tanda (runs 11 y 12), corregidos en v1.6.3
+
+- **Un commit `.permanently` mientras hay un espejo activo hornea el espejo en las
+  preferencias de macOS.** `CGCompleteDisplayConfiguration(.permanently)` escribe toda la
+  configuracion actual, espejos incluidos, en `com.apple.windowserver.displays.plist` por
+  conjunto de displays; macOS **recrea ese espejo solo** la proxima vez que aparece el mismo
+  conjunto. En run 12 la consola aparecio espejando a un virtual (D1: `mirrorOf=10`) en un
+  escenario que jamas pidio un espejo: era el espejo del run anterior, guardado por un cambio
+  de modo permanente hecho mientras estaba espejada. Ahora los cambios de modo son permanentes
+  solo si ningun display esta espejado (`canCommitPermanently`), y al arrancar se registra en
+  el log cualquier espejo que macOS haya restaurado sin eleccion persistida.
+- **El modo de un display se degrada con cada ciclo de espejo y al reencenderlo desde una fila
+  reconstruida.** Un esclavo adopta el modo del master y macOS no devuelve el anterior de forma
+  fiable (consola: 1920x1080 → 1280x720 → 800x600 en dos ciclos, run 11); y un display
+  reencendido tras relanzar la app no tenia modo vivo que restaurar. Ahora el modo previo se
+  persiste (`lastMode`) al apagar y al espejar, y se restaura por UUID al encender, al quitar el
+  espejo (tambien en la disolucion previa a apagar) y en la recuperacion al arrancar, con una
+  verificacion tras el asentamiento y un reintento si el WindowServer lo deshizo.
+- Nota operativa: esas preferencias contaminadas persisten entre reboots del guest; para una
+  linea base limpia hay que borrar `/Library/Preferences/com.apple.windowserver.displays.plist`
+  y `~/Library/Preferences/ByHost/com.apple.windowserver*.plist` (la app lo ofrece en Ajustes
+  como "limpiar cache") y reiniciar. El guion toma el modo nativo de la consola del mayor de su
+  lista de modos, no del modo actual.
 
 ### Infraestructura de prueba
 
@@ -218,7 +255,7 @@ sshpass -p admin scp -o StrictHostKeyChecking=no /tmp/cgprobe admin@$IP:/tmp/cgp
 docs/real-disable-vm/test.sh $IP /tmp/real-disable.log
 ```
 
-Esperado: `PASS=70 FAIL=0` y una linea `INFO` (`sleepnow` no soportado en la VM). Algunos
+Esperado: `PASS=81 FAIL=0` y una linea `INFO` (`sleepnow` no soportado en la VM). Algunos
 pasos van por `simpledisplayctl` (deploy.sh lo instala en `/usr/local/bin`) para cubrir el CLI.
 La consola de Tart no siempre arranca en 1920x1080 (se vio 1720x768 segun el tamano inicial
 de la ventana); el guion compara con el modo previo al espejo, no con un valor fijo.

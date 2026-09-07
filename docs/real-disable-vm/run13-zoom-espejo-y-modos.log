@@ -1,0 +1,773 @@
+[12:02:29] == real-disable VM test  ip=192.168.64.14  Mon Sep  7 12:02:29 -04 2026 ==
+[12:02:29] guest: 26.6.2 arm64 
+[12:02:29] 
+[12:02:29] ################ S0 reset + baseline ################
+[12:02:29] -> pkill; defaults delete app.simpledisplay; open -a SimpleDisplay
+[12:02:40] -- status (S0):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+PROBE online=1 active=1 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE online=1 active=1 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+[12:02:41] consola id=1 nativo=1920px actual=1920px
+[12:02:41]    PASS  la consola arranca en su modo nativo
+[12:02:41]    PASS  solo la consola de la VM, encendida y main
+[12:02:41] consola id=1
+[12:02:41] 
+[12:02:41] ################ S1 crear 2 'Twin' identicos + 1 'Retina' HiDPI ################
+[12:02:41] -> simpledisplay://create?width=1280&height=720&name=Twin
+[12:02:45] -> simpledisplay://create?width=1280&height=720&name=Twin
+[12:02:50] -> simpledisplay://create?width=1600&height=900&name=Retina&hidpi=true
+[12:02:55] -- status (S1):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   2    Twin       1    1   0    0     0      1280x720
+   3    Twin       1    1   0    0     0      1280x720
+   4    Retina     1    1   0    1     0      1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:02:56]    PASS  4 displays, todos encendidos
+[12:02:56]    PASS  dos filas 'Twin'
+[12:02:56]    PASS  Retina es HiDPI 1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:02:56] ids: TWIN1=2 TWIN2=3 RET=4  RET_UUID=8F3E566D-2909-4F39-BF19-69ECFA95DA8E
+[12:02:56] 
+[12:02:56] ################ A gemelos: apagar Twin#1, el otro Twin conserva nombre y fila ################
+[12:02:56] -> simpledisplayctl disable --id 2
+[12:03:04] -- status (A1):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   3    Twin       1    1   0    0     0      1280x720
+   4    Retina     1    1   0    1     0      1600x900
+   2    Twin       1    0   0    0     0      1280x720
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:03:04]    PASS  Twin#1 sigue listado (fantasma) y apagado
+[12:03:04]    PASS  Twin#1 conserva el nombre 'Twin'
+[12:03:04]    PASS  Twin#2 sigue encendido y con nombre 'Twin'
+[12:03:04]    PASS  siguen 4 filas (ninguna desaparecio)
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:03:05]    PASS  CG: Twin#1 fuera de la lista online (0=si) (0)
+[12:03:05] -> simpledisplayctl enable --id 2
+[12:03:15] -- status (A2):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   2    Twin       1    1   0    0     0      1280x720
+   3    Twin       1    1   0    0     0      1280x720
+   4    Retina     1    1   0    1     0      1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:03:15]    PASS  Twin#1 encendido de nuevo
+[12:03:15]    PASS  los 4 encendidos
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:03:15]    PASS  CG: Twin#1 online y activo (1)
+   LOG 2026-09-07 16:02:40.771 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:02:41.894 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:02:42.181 I  SimpleDisplay[818:1903] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 2
+   LOG 2026-09-07 16:02:46.265 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:02:46.545 I  SimpleDisplay[818:1903] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 3
+   LOG 2026-09-07 16:02:50.632 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:02:50.919 I  SimpleDisplay[818:1903] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 4
+   LOG 2026-09-07 16:02:55.983 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:02:57.159 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:04.578 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:05.684 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:15.100 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+[12:03:16] 
+[12:03:16] ################ B HiDPI: apagar y encender Retina, debe volver en HiDPI ################
+[12:03:16] -> simpledisplay://disable?id=4
+[12:03:24] -- status (B1):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   2    Twin       1    1   0    0     0      1280x720
+   3    Twin       1    1   0    0     0      1280x720
+   4    Retina     1    0   0    1     0      1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+[12:03:25]    PASS  Retina apagada
+[12:03:25] -> simpledisplay://enable?id=4
+[12:03:35] -- status (B2):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   2    Twin       1    1   0    0     0      1280x720
+   3    Twin       1    1   0    0     0      1280x720
+   4    Retina     1    1   0    1     0      1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:03:36]    PASS  Retina encendida
+[12:03:36]    PASS  Retina sigue HiDPI 1600x900
+   LOG 2026-09-07 16:02:57.159 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:04.578 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:05.684 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:15.100 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:17.359 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:24.723 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:25.431 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:35.811 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+[12:03:37] 
+[12:03:37] ################ Z modo elegido (zoom): via URL y CLI, persiste, sobrevive a cambios de topologia y al relanzar ################
+[12:03:37] -> simpledisplayctl mode --name Retina --width 800 --height 600 --hidpi
+[12:03:45] -- status (Z1):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   2    Twin       1    1   0    0     0      1280x720
+   3    Twin       1    1   0    0     0      1280x720
+   4    Retina     1    1   0    1     0      800x600
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 800x600 px=1600x1200 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:03:45]    PASS  Retina cambio a 800x600 HiDPI (zoom elegido)
+[12:03:45] -> simpledisplay://disable?id=2
+[12:03:54] -- status (Z2):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   3    Twin       1    1   0    0     0      1280x720
+   4    Retina     1    1   0    1     0      800x600
+   2    Twin       1    0   0    0     0      1280x720
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 800x600 px=1600x1200 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:03:54]    PASS  tras apagar otro display, Retina conserva el modo elegido 800x600 HiDPI
+[12:03:54] -> simpledisplay://enable?id=2
+[12:04:04] -- status (Z3):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   2    Twin       1    1   0    0     0      1280x720
+   3    Twin       1    1   0    0     0      1280x720
+   4    Retina     1    1   0    1     0      800x600
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=2 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=3 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=4 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 800x600 px=1600x1200 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:04:04]    PASS  tras encenderlo, Retina sigue en 800x600 HiDPI
+[12:04:04] -> relanzar: el modo elegido se reaplica
+[12:04:21] -- status (Z4):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   5    Twin       1    1   0    0     0      1280x720
+   6    Twin       1    1   0    0     0      1280x720
+   7    Retina     1    1   0    1     0      800x600
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=5 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=6 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=7 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 800x600 px=1600x1200 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:04:21]    PASS  tras relanzar, Retina vuelve en 800x600 HiDPI
+[12:04:21] -> simpledisplay://mode?name=Retina&width=1600&height=900&hidpi=true
+[12:04:29] -- status (Z5):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   5    Twin       1    1   0    0     0      1280x720
+   6    Twin       1    1   0    0     0      1280x720
+   7    Retina     1    1   0    1     0      1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=5 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=6 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=7 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:04:29]    PASS  de vuelta al modo del panel 1600x900 HiDPI
+[12:04:30]    (mode persistido se limpia al volver al panel: comprobado via status tras relanzar en C)
+[12:04:30] -> simpledisplay://mode?name=Retina&width=4000&height=3000
+[12:04:35] -- status (Z6):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   5    Twin       1    1   0    0     0      1280x720
+   6    Twin       1    1   0    0     0      1280x720
+   7    Retina     1    1   0    1     0      1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=5 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=6 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=7 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:04:36]    PASS  un modo que el display no ofrece se rechaza sin cambiar nada
+   LOG 2026-09-07 16:03:46.740 I  SimpleDisplay[818:1903] [app.simpledisplay:ViewModel] Re-applied configured mode 800x600<private> on virtual display '<private>' (came up as 1600x900)
+   LOG 2026-09-07 16:03:54.159 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:54.850 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:04.231 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:07.344 I  SimpleDisplay[1065:2334] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 5
+   LOG 2026-09-07 16:04:07.432 I  SimpleDisplay[1065:2334] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 6
+   LOG 2026-09-07 16:04:07.548 I  SimpleDisplay[1065:2334] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 7
+   LOG 2026-09-07 16:04:21.352 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:22.048 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:29.419 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:30.413 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:35.771 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+[12:04:37] 
+[12:04:37] ################ C reinicio de la app con Retina apagada; reactivar desde la fila fantasma ################
+[12:04:37] -> simpledisplay://disable?id=7
+[12:04:44] -- status (C1):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   5    Twin       1    1   0    0     0      1280x720
+   6    Twin       1    1   0    0     0      1280x720
+   7    Retina     1    0   0    1     0      1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=5 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=6 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+[12:04:45]    PASS  Retina apagada antes de reiniciar
+[12:04:45] -> pkill SimpleDisplay; open -a SimpleDisplay
+[12:05:01] -- status (C2):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   8    Twin       1    1   0    0     0      1280x720
+   9    Twin       1    1   0    0     0      1280x720
+   10   Retina     1    0   0    1     0      1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+[12:05:02]    PASS  app relanzada: 4 filas
+[12:05:02]    PASS  Retina sigue apagada tras relanzar (estado persistido)
+[12:05:02]    PASS  los dos Twin encendidos
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+[12:05:02]    PASS  CG: Retina (3200x1800 px) no esta online (0=si) (0)
+[12:05:02] -> simpledisplay://enable?name=Retina
+[12:05:13] -- status (C3):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   8    Twin       1    1   0    0     0      1280x720
+   9    Twin       1    1   0    0     0      1280x720
+   10   Retina     1    1   0    1     0      1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=10 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:05:13]    PASS  Retina reactivada desde el fantasma
+[12:05:13]    PASS  Retina volvio en HiDPI
+   LOG 2026-09-07 16:03:45.104 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:45.795 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:46.740 I  SimpleDisplay[818:1903] [app.simpledisplay:ViewModel] Re-applied configured mode 800x600<private> on virtual display '<private>' (came up as 1600x900)
+   LOG 2026-09-07 16:03:54.159 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:03:54.850 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:04.231 I  SimpleDisplay[818:1903] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:07.344 I  SimpleDisplay[1065:2334] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 5
+   LOG 2026-09-07 16:04:07.432 I  SimpleDisplay[1065:2334] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 6
+   LOG 2026-09-07 16:04:07.548 I  SimpleDisplay[1065:2334] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 7
+   LOG 2026-09-07 16:04:21.352 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:22.048 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:29.419 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:30.413 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:35.771 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:37.460 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:44.831 I  SimpleDisplay[1065:2334] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:04:47.925 I  SimpleDisplay[1157:26d5] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 8
+   LOG 2026-09-07 16:04:48.008 I  SimpleDisplay[1157:26d5] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 9
+   LOG 2026-09-07 16:04:48.129 I  SimpleDisplay[1157:26d5] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 10
+   LOG 2026-09-07 16:04:49.484 I  SimpleDisplay[1157:26d5] [app.simpledisplay:ViewModel] Restored disabled state on '<private>'
+   LOG 2026-09-07 16:05:01.930 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:02.998 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:13.363 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+[12:05:14] ids tras reinicio: TWIN1=8 TWIN2=9 RET=10 CONSOLE=1
+[12:05:14] 
+[12:05:14] ################ D quitar un display virtual apagado: no debe dejar fila muerta ni fantasma en el WindowServer ################
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=9 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=10 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:05:15] Twin#2 uuid=F4F93183-B359-4F75-A15E-141A9B902449
+[12:05:15] -> simpledisplay://disable?id=9
+[12:05:22] -- status (D1):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   8    Twin       1    1   0    0     0      1280x720
+   10   Retina     1    1   0    1     0      1600x900
+   9    Twin       1    0   0    0     0      1280x720
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=10 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:05:23]    PASS  Twin#2 apagado
+[12:05:23] -> simpledisplay://remove?id=9
+[12:05:32] -- status (D2):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   8    Twin       1    1   0    0     0      1280x720
+   10   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=8 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=10 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:05:33]    PASS  la fila de Twin#2 desaparecio al quitarlo (sin fantasma muerto)
+[12:05:33]    PASS  quedan 3 filas, todas encendidas
+[12:05:33]    persistido: [{"uuid": "B9E0D9CF-4D27-4225-B90E-438098FB7F0A", "lastKnownID": 2, "isDisabled": false, "isMain": false, "name": "Twin", "lastMode": {"refreshRate": 60, "pixelWidth": 1280, "isHiDPI": false, "width": 1280, "height": 720, "pixelHeight": 720}}, {"uuid": "8F3E566D-2909-4F39-BF19-69ECFA95DA8E", "lastKnownID": 10, "isDisabled": false, "isMain": false, "name": "Retina", "lastMode": {"refreshRate": 60, "pixelWidth": 3200, "isHiDPI": true, "width": 1600, "height": 900, "pixelHeight": 1800}}]
+[12:05:33]    PASS  persistencia olvido el uuid de Twin#2 (False)
+[12:05:33] -> relanzar la app: quien herede el slot de serial de Twin#2 no debe heredar su modo
+[12:05:50] -- status (D3):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   11   Twin       1    1   0    0     0      1280x720
+   12   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=11 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=12 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:05:50]    PASS  tras relanzar: 3 filas encendidas
+[12:05:50]    PASS  Retina sigue 1600x900 HiDPI tras relanzar (serial persistente: no hereda el slot de Twin#2)
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=11 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=12 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:05:51]    PASS  Retina conserva su UUID (identidad) tras relanzar (8F3E566D-2909-4F39-BF19-69ECFA95DA8E)
+   LOG 2026-09-07 16:05:01.930 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:02.998 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:13.363 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:15.449 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:16.383 I  SimpleDisplay[1157:26d5] [app.simpledisplay:ViewModel] Re-applied configured mode 1600x900<private> on virtual display '<private>' (came up as 800x600)
+   LOG 2026-09-07 16:05:22.818 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:23.532 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:24.176 I  SimpleDisplay[1157:26d5] [app.simpledisplay:VirtualDisplayService] Removed virtual display<private> (ID 9)
+   LOG 2026-09-07 16:05:32.914 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:36.373 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 11
+   LOG 2026-09-07 16:05:36.469 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 12
+   LOG 2026-09-07 16:05:50.392 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+[12:05:51] -> simpledisplay://create?width=1600&height=900&name=Retina2&hidpi=true
+[12:06:00] -- status (D4):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   11   Twin       1    1   0    0     0      1280x720
+   12   Retina     1    1   0    1     0      1600x900
+   13   Retina2    1    1   0    1     0      1600x900
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=11 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=12 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+PROBE id=13 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:06:01]    PASS  Retina2 (hereda el slot de Twin#2) arranca en 1600x900 HiDPI, no en el 1280x720 recordado
+PROBE online=4 active=4 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=11 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=12 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+PROBE id=13 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=F4F93183-B359-4F75-A15E-141A9B902449 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:06:01]    PASS  CG: dos displays a 3200x1800 px (Retina y Retina2) (2)
+[12:06:01] -> simpledisplay://remove?name=Retina2
+[12:06:08] -- status (D5):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   11   Twin       1    1   0    0     0      1280x720
+   12   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=11 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=12 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:06:08]    PASS  Retina2 quitado: quedan 3 filas encendidas
+   LOG 2026-09-07 16:05:36.373 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 11
+   LOG 2026-09-07 16:05:36.469 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 12
+   LOG 2026-09-07 16:05:50.392 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:52.348 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:52.634 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 13
+   LOG 2026-09-07 16:05:53.585 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:ViewModel] Re-applied configured mode 1600x900<private> on virtual display '<private>' (came up as 1280x720)
+   LOG 2026-09-07 16:06:00.737 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:01.748 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:01.749 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:VirtualDisplayService] Removed virtual display<private> (ID 13)
+   LOG 2026-09-07 16:06:08.094 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+[12:06:09] ids: TWIN1=11 RET=12 CONSOLE=1
+[12:06:09] 
+[12:06:09] ################ H fantasmas sembrados desde una sesion previa: colision de ID y display inexistente ################
+[12:06:09] -> pkill; defaults write con 'Phantom' (lastKnownID=1, id vivo de otro display) y 'Orphan' (lastKnownID=9999)
+[12:06:12]    persistido antes: [{"isDisabled": false, "uuid": "B9E0D9CF-4D27-4225-B90E-438098FB7F0A", "isMain": false, "lastKnownID": 2, "name": "Twin", "lastMode": {"width": 1280, "isHiDPI": false, "refreshRate": 60, "pixelWidth": 1280, "pixelHeight": 720, "height": 720}}, {"isDisabled": false, "uuid": "8F3E566D-2909-4F39-BF19-69ECFA95DA8E", "isMain": false, "lastKnownID": 10, "name": "Retina", "lastMode": {"width": 1600, "isHiDPI": true, "refreshRate": 60, "pixelWidth": 3200, "pixelHeight": 1800, "height": 900}}]
+[12:06:12]    sembrado: [{"isDisabled": false, "uuid": "B9E0D9CF-4D27-4225-B90E-438098FB7F0A", "isMain": false, "lastKnownID": 2, "name": "Twin", "lastMode": {"width": 1280, "isHiDPI": false, "refreshRate": 60, "pixelWidth": 1280, "pixelHeight": 720, "height": 720}}, {"isDisabled": false, "uuid": "8F3E566D-2909-4F39-BF19-69ECFA95DA8E", "isMain": false, "lastKnownID": 10, "name": "Retina", "lastMode": {"width": 1600, "isHiDPI": true, "refreshRate": 60, "pixelWidth": 3200, "pixelHeight": 1800, "height": 900}}, {"uuid": "FAKE-PHANTOM", "isDisabled": true, "isMain": false, "lastKnownID": 1, "name": "Phantom"}, {"uuid": "FAKE-ORPHAN", "isDisabled": true, "isMain": false, "lastKnownID": 9999, "name": "Orphan"}]
+[12:06:27] -- status (H1):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   14   Twin       1    1   0    0     0      1280x720
+   15   Retina     1    1   0    1     0      1600x900
+   9999 Orphan     0    0   0    0     0      0x0
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=14 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:06:31]    PASS  'Phantom' (ID en colision con la consola) NO se muestra
+[12:06:31]    PASS  la consola sigue encendida (no se toco el display equivocado)
+[12:06:31]    PASS  'Orphan' (ID libre) se muestra como fila apagada placeholder
+[12:06:31] -> simpledisplay://enable?name=Orphan
+[12:06:40] -- status (H2):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   14   Twin       1    1   0    0     0      1280x720
+   15   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=14 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:06:41]    PASS  al intentar encender 'Orphan' inexistente, se olvida la fila
+   LOG 2026-09-07 16:05:13.363 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:15.449 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:16.383 I  SimpleDisplay[1157:26d5] [app.simpledisplay:ViewModel] Re-applied configured mode 1600x900<private> on virtual display '<private>' (came up as 800x600)
+   LOG 2026-09-07 16:05:22.818 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:23.532 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:24.176 I  SimpleDisplay[1157:26d5] [app.simpledisplay:VirtualDisplayService] Removed virtual display<private> (ID 9)
+   LOG 2026-09-07 16:05:32.914 I  SimpleDisplay[1157:26d5] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:36.373 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 11
+   LOG 2026-09-07 16:05:36.469 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 12
+   LOG 2026-09-07 16:05:50.392 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:52.348 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:05:52.634 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 13
+   LOG 2026-09-07 16:05:53.585 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:ViewModel] Re-applied configured mode 1600x900<private> on virtual display '<private>' (came up as 1280x720)
+   LOG 2026-09-07 16:06:00.737 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:01.748 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:01.749 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:VirtualDisplayService] Removed virtual display<private> (ID 13)
+   LOG 2026-09-07 16:06:08.094 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:13.480 I  SimpleDisplay[1369:2f36] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 14
+   LOG 2026-09-07 16:06:13.586 I  SimpleDisplay[1369:2f36] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 15
+   LOG 2026-09-07 16:06:13.605 E  SimpleDisplay[1369:2f36] [app.simpledisplay:ViewModel] Dropping ghost row '<private>' (<private>): its retained ID 1 now belongs to <private>
+   LOG 2026-09-07 16:06:27.497 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:32.334 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:40.701 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+[12:06:42]    persistido ahora: [{"isMain": false, "lastMode": {"isHiDPI": false, "height": 720, "width": 1280, "pixelWidth": 1280, "refreshRate": 60, "pixelHeight": 720}, "uuid": "B9E0D9CF-4D27-4225-B90E-438098FB7F0A", "isDisabled": false, "lastKnownID": 2, "name": "Twin"}, {"isMain": false, "lastMode": {"isHiDPI": true, "height": 900, "width": 1600, "pixelWidth": 3200, "refreshRate": 60, "pixelHeight": 1800}, "uuid": "8F3E566D-2909-4F39-BF19-69ECFA95DA8E", "isDisabled": false, "lastKnownID": 10, "name": "Retina"}, {"isMain": false, "uuid": "FAKE-PHANTOM", "isDisabled": true, "lastKnownID": 1, "name": "Phantom"}, {"isMain": false, "uuid": "FAKE-ORPHAN", "isDisabled": false, "lastKnownID": 9999, "name": "Orphan"}]
+[12:06:42]    PASS  Orphan quedo con isDisabled=false en persistencia (False)
+[12:06:42]    PASS  Phantom conserva isDisabled=true en persistencia (True)
+[12:06:42] 
+[12:06:42] ################ E apagar el display MAIN (la consola): main debe transferirse antes ################
+[12:06:42] -- status (E0):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   14   Twin       1    1   0    0     0      1280x720
+   15   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=14 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:06:43] consola id=1
+[12:06:43] -> simpledisplay://disable?id=1
+[12:06:52] -- status (E1):
+   id   name       virt on  main hidpi mirror mode
+   14   Twin       1    1   1    0     0      1280x720
+   15   Retina     1    1   0    1     0      1600x900
+   1    Apple Virtual 0    0   0    0     0      1920x1080
+PROBE online=2 active=2 main=14
+PROBE id=14 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:06:53]    PASS  consola apagada (fantasma)
+[12:06:53]    PASS  otro display es main ahora
+[12:06:53]    PASS  con el fisico apagado, Retina conserva 1600x900 HiDPI (conjunto de displays distinto)
+PROBE online=2 active=2 main=14
+PROBE id=14 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:06:53]    PASS  CG: consola fuera de la lista online (0=si) (0)
+[12:06:53] -> simpledisplay://enable?id=1
+[12:07:03] -- status (E2):
+   id   name       virt on  main hidpi mirror mode
+   14   Twin       1    1   1    0     0      1280x720
+   1    Apple Virtual 0    1   0    0     0      1920x1080
+   15   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=14
+PROBE id=14 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:07:03]    PASS  consola encendida de nuevo
+[12:07:03]    PASS  todos encendidos
+   LOG 2026-09-07 16:06:08.094 I  SimpleDisplay[1260:2b5b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:13.480 I  SimpleDisplay[1369:2f36] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 14
+   LOG 2026-09-07 16:06:13.586 I  SimpleDisplay[1369:2f36] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 15
+   LOG 2026-09-07 16:06:13.605 E  SimpleDisplay[1369:2f36] [app.simpledisplay:ViewModel] Dropping ghost row '<private>' (<private>): its retained ID 1 now belongs to <private>
+   LOG 2026-09-07 16:06:27.497 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:32.334 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:40.701 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:42.750 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:43.452 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:52.811 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:06:53.899 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:07:03.269 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+[12:07:04] 
+[12:07:04] ################ G ultimo display visible: cuenta atras, confirmacion headless y recuperacion al arrancar ################
+[12:07:04] -- status (G0):
+   id   name       virt on  main hidpi mirror mode
+   14   Twin       1    1   1    0     0      1280x720
+   1    Apple Virtual 0    1   0    0     0      1920x1080
+   15   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=14
+PROBE id=14 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+PROBE online=3 active=3 main=14
+PROBE id=14 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:07:05] consola id=1 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE
+[12:07:05] -> simpledisplay://disable?id=1
+[12:07:12] -- status (G1):
+   id   name       virt on  main hidpi mirror mode
+   14   Twin       1    1   1    0     0      1280x720
+   15   Retina     1    1   0    1     0      1600x900
+   1    Apple Virtual 0    0   0    0     0      1920x1080
+PROBE online=2 active=2 main=14
+PROBE id=14 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:07:12]    PASS  consola apagada (cuenta atras corriendo)
+[12:07:12]    PASS  persistido como apagado NO confirmado (headless ausente) (None)
+[12:07:12]    esperando 14 s a que venza la cuenta atras
+[12:07:27] -- status (G2):
+   id   name       virt on  main hidpi mirror mode
+   14   Twin       1    1   1    0     0      1280x720
+   1    Apple Virtual 0    1   0    0     0      1920x1080
+   15   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=14
+PROBE id=14 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:07:27]    PASS  la consola volvio sola al vencer la cuenta atras
+[12:07:28]    PASS  persistencia: consola isDisabled=false tras revertir (False)
+[12:07:28] -> simpledisplayctl disable --id 1 --headless
+[12:07:34] -- status (G3):
+   id   name       virt on  main hidpi mirror mode
+   14   Twin       1    1   1    0     0      1280x720
+   15   Retina     1    1   0    1     0      1600x900
+   1    Apple Virtual 0    0   0    0     0      1920x1080
+PROBE online=2 active=2 main=14
+PROBE id=14 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:07:35]    PASS  con headless=true la consola queda apagada
+[12:07:35]    PASS  persistido headless=true (True)
+[12:07:35]    esperando 17 s: con headless confirmado no debe revertirse
+[12:07:52] -- status (G4):
+   id   name       virt on  main hidpi mirror mode
+   14   Twin       1    1   1    0     0      1280x720
+   15   Retina     1    1   0    1     0      1600x900
+   1    Apple Virtual 0    0   0    0     0      1920x1080
+PROBE online=2 active=2 main=14
+PROBE id=14 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=15 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:07:53]    PASS  sigue apagada tras 17 s (sin cuenta atras)
+[12:07:53] -> relanzar la app: un headless confirmado se reaplica
+[12:08:09] -- status (G5):
+   id   name       virt on  main hidpi mirror mode
+   17   Twin       1    1   1    0     0      1280x720
+   18   Retina     1    1   0    1     0      1600x900
+   1    Apple Virtual 0    0   0    0     0      0x0
+PROBE online=2 active=2 main=17
+PROBE id=17 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=18 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:08:10]    PASS  tras relanzar la consola sigue apagada (headless confirmado)
+[12:08:10] -> simpledisplay://enable?id=1
+[12:08:20] -- status (G6):
+   id   name       virt on  main hidpi mirror mode
+   17   Twin       1    1   1    0     0      1280x720
+   1    Apple Virtual 0    1   0    0     0      1920x1080
+   18   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=17
+PROBE id=17 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=18 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:08:20]    PASS  consola encendida de nuevo
+[12:08:20]    PASS  reencendida desde la fila reconstruida, la consola recupera su modo de arranque (1920px; modo persistido al apagarla)
+[12:08:20] -> simpledisplay://disable?id=1
+[12:08:24] -> pkill DURANTE la cuenta atras (simula crash); relanzar
+[12:08:43] -- status (G7):
+   id   name       virt on  main hidpi mirror mode
+   20   Twin       1    1   1    0     0      1280x720
+   1    Apple Virtual 0    1   0    0     0      1920x1080
+   21   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=20
+PROBE id=20 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=21 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:08:43]    PASS  al arrancar sin pantalla visible y sin headless confirmado, la consola se recupera sola
+[12:08:43]    PASS  y vuelve en su modo de arranque (1920px)
+[12:08:44]    PASS  persistencia limpia tras la recuperacion (isDisabled=false) (False)
+   LOG 2026-09-07 16:07:05.933 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:07:12.308 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:07:21.311 I  SimpleDisplay[1369:2f36] [app.simpledisplay:ViewModel] Headless countdown reverted: '<private>' is back on
+   LOG 2026-09-07 16:07:27.404 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:07:28.449 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:07:34.860 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:07:52.964 I  SimpleDisplay[1369:2f36] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:07:56.058 I  SimpleDisplay[1642:39a2] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 17
+   LOG 2026-09-07 16:07:56.192 I  SimpleDisplay[1642:39a2] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 18
+   LOG 2026-09-07 16:07:56.214 E  SimpleDisplay[1642:39a2] [app.simpledisplay:ViewModel] Dropping ghost row '<private>' (<private>): its retained ID 1 now belongs to <private>
+   LOG 2026-09-07 16:08:10.030 I  SimpleDisplay[1642:39a2] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:08:10.720 I  SimpleDisplay[1642:39a2] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:08:20.055 I  SimpleDisplay[1642:39a2] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:08:20.787 I  SimpleDisplay[1642:39a2] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:08:27.637 I  SimpleDisplay[1693:3c2b] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 20
+   LOG 2026-09-07 16:08:27.752 I  SimpleDisplay[1693:3c2b] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 21
+   LOG 2026-09-07 16:08:27.758 E  SimpleDisplay[1693:3c2b] [app.simpledisplay:ViewModel] Dropping ghost row '<private>' (<private>): its retained ID 1 now belongs to <private>
+   LOG 2026-09-07 16:08:29.097 E  SimpleDisplay[1693:3c2b] [app.simpledisplay:ViewModel] Recovered '<private>': it was off with no visible display left and headless was never confirmed
+   LOG 2026-09-07 16:08:29.738 I  SimpleDisplay[1693:3c2b] [app.simpledisplay:ViewModel] Dropping persisted disable of '<private>' — would leave no visible display and headless was not confirmed
+   LOG 2026-09-07 16:08:43.565 I  SimpleDisplay[1693:3c2b] [app.simpledisplay:URLScheme] URL command: <private>
+[12:08:45] 
+[12:08:45] ################ M espejo: solo un display FISICO puede espejar; un virtual como esclavo crashea el WindowServer ################
+[12:08:45] WindowServer pid=168
+[12:08:45] -- status (M0):
+   id   name       virt on  main hidpi mirror mode
+   20   Twin       1    1   1    0     0      1280x720
+   1    Apple Virtual 0    1   0    0     0      1920x1080
+   21   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=20
+PROBE id=20 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=21 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:08:46] consola=1 (1920px de ancho) twin=20 main=20
+[12:08:46] -> simpledisplay://mirror?id=20
+[12:08:53] -- status (M1):
+   id   name       virt on  main hidpi mirror mode
+   20   Twin       1    1   1    0     0      1280x720
+   1    Apple Virtual 0    1   0    0     0      1920x1080
+   21   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=20
+PROBE id=20 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=21 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:08:53]    PASS  espejar un VIRTUAL se rechaza: Twin sigue sin espejo
+[12:08:53]    PASS  tras rechazar el espejo del virtual: el WindowServer sigue siendo el mismo proceso (168)
+[12:08:53] -> simpledisplayctl mirror --id 1
+[12:09:08] -- status (M2):
+   id   name       virt on  main hidpi mirror mode
+   20   Twin       1    1   1    0     0      1280x720
+   1    Apple Virtual 0    1   0    0     20     1280x720
+   21   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=2 main=20
+PROBE id=20 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=0 isActive=0 main=0 builtin=0 mirrorOf=20 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1280x720 px=1280x720 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480,1280x720]
+PROBE id=21 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:09:09]    PASS  tras espejar la consola: el WindowServer sigue siendo el mismo proceso (168)
+[12:09:09]    PASS  la consola espeja al display main (un virtual)
+[12:09:09]    PASS  la consola sigue encendida (espejar no es apagar)
+PROBE online=3 active=2 main=20
+PROBE id=20 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=0 isActive=0 main=0 builtin=0 mirrorOf=20 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1280x720 px=1280x720 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480,1280x720]
+PROBE id=21 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:09:09]    PASS  CG: CGDisplayMirrorsDisplay(consola) == 20 (1)
+[12:09:09]    PASS  persistido mirrorOf de la consola apunta a un UUID (True)
+[12:09:09] -> relanzar: el espejo persistido se reaplica
+[12:09:29] -- status (M3):
+   id   name       virt on  main hidpi mirror mode
+   22   Twin       1    1   1    0     0      1280x720
+   1    Apple Virtual 0    1   0    0     22     1280x720
+   23   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=2 main=22
+PROBE id=22 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=0 isActive=0 main=0 builtin=0 mirrorOf=22 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1280x720 px=1280x720 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480,1280x720]
+PROBE id=23 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:09:29]    PASS  tras relanzar con espejo persistido: el WindowServer sigue siendo el mismo proceso (168)
+[12:09:29]    PASS  tras relanzar, la consola vuelve espejada a un display encendido
+[12:09:29] -> simpledisplayctl unmirror --id 1
+[12:09:38] -- status (M4):
+   id   name       virt on  main hidpi mirror mode
+   22   Twin       1    1   1    0     0      1280x720
+   1    Apple Virtual 0    1   0    0     0      1920x1080
+   23   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=22
+PROBE id=22 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=23 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:09:39]    PASS  sin espejos
+[12:09:39]    PASS  la consola volvio a su modo previo al espejo (1920px; restaurado por la app)
+[12:09:39]    PASS  persistencia sin mirrorOf (0)
+[12:09:39] -> simpledisplay://mirror?id=1
+[12:09:50] -- status (M5):
+   id   name       virt on  main hidpi mirror mode
+   22   Twin       1    1   1    0     0      1280x720
+   1    Apple Virtual 0    1   0    0     22     1280x720
+   23   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=2 main=22
+PROBE id=22 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=1 active=0 isActive=0 main=0 builtin=0 mirrorOf=22 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1280x720 px=1280x720 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480,1280x720]
+PROBE id=23 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:09:50] la consola espeja a 22; ahora apago ese destino
+[12:09:50] -> simpledisplay://disable?id=22
+[12:10:01] -- status (M6):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   23   Retina     1    1   0    1     0      1600x900
+   22   Twin       1    0   0    0     0      1280x720
+PROBE online=2 active=2 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=23 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:10:01]    PASS  tras apagar el destino de un espejo: el WindowServer sigue siendo el mismo proceso (168)
+[12:10:01]    PASS  apagar el destino disuelve el espejo primero: la consola queda sin espejo y encendida
+[12:10:01]    PASS  y recupera su modo previo al espejo (1920px)
+[12:10:01]    PASS  el destino quedo apagado
+[12:10:01] -> simpledisplay://enable?id=22
+[12:10:11] -- status (M7):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   22   Twin       1    1   0    0     0      1280x720
+   23   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=22 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=23 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:10:11]    PASS  todos encendidos y sin espejos
+   LOG 2026-09-07 16:08:29.097 E  SimpleDisplay[1693:3c2b] [app.simpledisplay:ViewModel] Recovered '<private>': it was off with no visible display left and headless was never confirmed
+   LOG 2026-09-07 16:08:29.738 I  SimpleDisplay[1693:3c2b] [app.simpledisplay:ViewModel] Dropping persisted disable of '<private>' — would leave no visible display and headless was not confirmed
+   LOG 2026-09-07 16:08:43.565 I  SimpleDisplay[1693:3c2b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:08:45.919 I  SimpleDisplay[1693:3c2b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:08:46.697 I  SimpleDisplay[1693:3c2b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:08:53.049 I  SimpleDisplay[1693:3c2b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:08:54.056 I  SimpleDisplay[1693:3c2b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:09:08.561 I  SimpleDisplay[1693:3c2b] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:09:12.775 I  SimpleDisplay[1813:3fc9] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1280x720) → ID 22
+   LOG 2026-09-07 16:09:12.906 I  SimpleDisplay[1813:3fc9] [app.simpledisplay:VirtualDisplayService] Created virtual display '<private>' (1600x900) → ID 23
+   LOG 2026-09-07 16:09:12.922 E  SimpleDisplay[1813:3fc9] [app.simpledisplay:ViewModel] Dropping ghost row '<private>' (<private>): its retained ID 1 now belongs to <private>
+   LOG 2026-09-07 16:09:28.759 I  SimpleDisplay[1813:3fc9] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:09:30.287 I  SimpleDisplay[1813:3fc9] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:09:38.708 I  SimpleDisplay[1813:3fc9] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:09:39.779 I  SimpleDisplay[1813:3fc9] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:09:50.135 I  SimpleDisplay[1813:3fc9] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:09:50.842 I  SimpleDisplay[1813:3fc9] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:10:01.205 I  SimpleDisplay[1813:3fc9] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:10:02.288 I  SimpleDisplay[1813:3fc9] [app.simpledisplay:URLScheme] URL command: <private>
+   LOG 2026-09-07 16:10:11.612 I  SimpleDisplay[1813:3fc9] [app.simpledisplay:URLScheme] URL command: <private>
+[12:10:12] 
+[12:10:12] ################ F sleep/wake (puede no estar soportado en VM) ################
+[12:10:13] pmset:  sleep 0 (sleep prevented by powerd); Sleep On Power Button 1; standby 0;
+[12:10:13] -> simpledisplay://disable?id=12
+[12:10:20] -- status (F0):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   22   Twin       1    1   0    0     0      1280x720
+   23   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=22 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=23 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+Unable to sleep system: error 0xe00002e2
+[12:10:21]    INFO  sleepnow no aceptado en la VM
+[12:10:21] -> simpledisplay://enable?id=12
+[12:10:30] -- status (F2):
+   id   name       virt on  main hidpi mirror mode
+   1    Apple Virtual 0    1   1    0     0      1920x1080
+   22   Twin       1    1   0    0     0      1280x720
+   23   Retina     1    1   0    1     0      1600x900
+PROBE online=3 active=3 main=1
+PROBE id=1 active=1 isActive=1 main=1 builtin=0 mirrorOf=0 uuid=736BE781-8AFA-4628-ACBF-1F84506349AE 1920x1080 px=1920x1080 hidpi=0 modes=[800x600,960x540,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900,1600x1200,1920x1080,640x480]
+PROBE id=22 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=B9E0D9CF-4D27-4225-B90E-438098FB7F0A 1280x720 px=1280x720 hidpi=0 modes=[800x600,1024x576,1024x768,1280x720,640x360,640x480]
+PROBE id=23 active=1 isActive=1 main=0 builtin=0 mirrorOf=0 uuid=8F3E566D-2909-4F39-BF19-69ECFA95DA8E 1600x900 px=3200x1800 hidpi=1 modes=[800x600@2x,800x600,960x540@2x,1024x576,1024x768,1280x720,1280x960,1344x756,1344x1008,1600x900@2x,1600x900,1600x1200,1920x1080,3200x1800,400x300@2x,512x384@2x,640x360@2x,640x480@2x,640x480,672x378@2x,672x504@2x,800x450@2x,800x450@2x,1600x900]
+[12:10:30] 
+[12:10:30] ################ RESUMEN ################
+[12:10:30] PASS=81 FAIL=0
