@@ -19,6 +19,9 @@ Evidencia en esta carpeta:
 - `cgmirror.swift`, `cgmain.swift` — herramientas minimas (espejar / hacer main) para
   probar que tolera el WindowServer sin pasar por la app. Ver "Segunda tanda".
 - `run7-headless-y-espejo.log` — segunda tanda (escenarios G y M): **65 PASS, 0 FAIL** (los 38 de la primera tanda mas 27 nuevos).
+- `run8-serial-persistente-y-cli.log` — tercera tanda: serial persistente por virtual y
+  subcomandos nuevos del CLI (`disable --headless`, `enable`, `mirror`, `unmirror`):
+  **67 PASS, 0 FAIL**.
 
 ## Que puede y que no puede probar la VM
 
@@ -46,7 +49,7 @@ reproduce:
 | A | Apaga un Twin; el otro Twin conserva nombre y fila; reenciende | El apagado sale de `CGGetOnlineDisplayList` (CG), su fila queda como fantasma con nombre `Twin`; al encender vuelve online y activo |
 | B | Apaga y enciende Retina | Vuelve **en HiDPI 1600x900** (restauracion de modo por UUID) |
 | C | Apaga Retina, `pkill` + relanzar, enciende desde la fila fantasma | Tras relanzar Retina sigue apagada y fuera de la lista online (log: `Restored disabled state`); `enable?name=Retina` la trae de vuelta en HiDPI |
-| D | Apaga Twin#2, lo **quita** (`remove`), relanza | La fila desaparece al quitarlo, la persistencia olvida su UUID, tras relanzar quedan 3 filas encendidas |
+| D | Apaga Twin#2, lo **quita** (`remove`), relanza | La fila desaparece al quitarlo, la persistencia olvida su UUID, tras relanzar quedan 3 filas encendidas y **Retina conserva su UUID y 1600x900 HiDPI** (run 8; en runs 4-7 heredaba el slot de Twin#2, ver abajo) |
 | H | Siembra en UserDefaults dos fantasmas de "una sesion previa": `Phantom` con `lastKnownID` = id vivo de la consola, `Orphan` con id 9999 | `Phantom` se descarta (log: `Dropping ghost row ... its retained ID 1 now belongs to ...`) y la consola **no** se toca; `Orphan` aparece como placeholder apagado y al intentar encenderlo se olvida (fila y flag) |
 | E | Apaga el display **main** (la consola) | Main se transfiere a un virtual antes, la consola sale de la lista online; al encender vuelve y todo queda activo |
 | F | `pmset sleepnow` | No soportado en la VM (INFO) |
@@ -82,20 +85,26 @@ reproduce:
 - HiDPI se restaura al reencender, incluso cuando el fantasma se reconstruyo tras
   relanzar la app (el fantasma conserva el modo vivo via `asDisabledGhost`).
 
-### Preexistente en main, **no corregido aqui** (fuera del alcance del PR)
+### Preexistente en main, encontrado aqui y corregido en la tercera tanda
 
 **Reasignacion del slot de serial + memoria de modo por identidad.** El N-esimo virtual
-usa el serial N (mas bajo libre) y al arrancar se restauran en el orden guardado. Si se
-quita un virtual intermedio y se relanza la app, el siguiente hereda su slot y con el la
-identidad (vendor/product/serial → UUID) y **el modo que macOS recuerda para esa
-identidad**. En la prueba, tras quitar Twin#2 (slot 2, 1280x720) y relanzar, `Retina`
-(configurada 1600x900 HiDPI, y asi la creo la app segun su log) aparecio con el UUID de
-Twin#2 y en **1280x720 sin HiDPI**; `cgprobe` muestra que ese display ofrece tanto
-`1280x720` como `1600x900@2x` y macOS eligio el recordado. Sobrevive a un reboot del
-guest. Consecuencias: un virtual puede perder HiDPI tras un reinicio, y los flags
-persistidos por UUID (apagado/main) de un virtual pueden aplicarse a otro.
-Arreglo sugerido: persistir el serial en `VirtualDisplayConfig` para que la identidad no
-migre, o reaplicar el modo configurado tras crear (`CGConfigureDisplayWithDisplayMode`).
+usaba el serial N (mas bajo libre) y al arrancar se restauraban en el orden guardado. Si se
+quitaba un virtual intermedio y se relanzaba la app, el siguiente heredaba su slot y con el
+la identidad (vendor/product/serial → UUID) y **el modo que macOS recuerda para esa
+identidad**. En las corridas 4 a 7, tras quitar Twin#2 (slot 2, 1280x720) y relanzar,
+`Retina` (configurada 1600x900 HiDPI, y asi la creaba la app segun su log) aparecia con el
+UUID de Twin#2 y en **1280x720 sin HiDPI**; `cgprobe` mostraba que ese display ofrecia
+tanto `1280x720` como `1600x900@2x` y macOS elegia el recordado. Sobrevivia a un reboot
+del guest. Consecuencias: un virtual podia perder HiDPI tras un reinicio, y los flags
+persistidos por UUID (apagado/main/espejo) de un virtual podian aplicarse a otro.
+
+Arreglo (commit `fix: serial persistente por display virtual`): el serial se guarda en
+`VirtualDisplayConfig.serial`; al restaurar, cada config recupera el suyo, y al reconfigurar
+(quitar + recrear) se conserva. Un slot nuevo es el mas bajo que no este vivo **ni reservado
+por otra config guardada**. Configs de versiones anteriores sin serial reciben uno en el
+primer arranque y se re-guardan. Verificado en run 8: tras quitar Twin#2 y relanzar,
+Retina conserva `E3BD08CD-…` y 1600x900 HiDPI. La acotacion de perfiles ColorSync se
+mantiene (misma cantidad de identidades, ahora estables).
 
 ### Infraestructura de prueba
 
@@ -195,5 +204,5 @@ sshpass -p admin scp -o StrictHostKeyChecking=no /tmp/cgprobe admin@$IP:/tmp/cgp
 docs/real-disable-vm/test.sh $IP /tmp/real-disable.log
 ```
 
-Esperado: `PASS=65 FAIL=0` y dos lineas `INFO` (modo de Retina tras el relanzamiento de D,
-y `sleepnow` no soportado).
+Esperado: `PASS=67 FAIL=0` y una linea `INFO` (`sleepnow` no soportado en la VM). Algunos
+pasos van por `simpledisplayctl` (deploy.sh lo instala en `/usr/local/bin`) para cubrir el CLI.

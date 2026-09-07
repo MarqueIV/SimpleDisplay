@@ -23,6 +23,7 @@ PASS=0; FAIL=0
 log()   { echo "[$(date +%H:%M:%S)] $*" | tee -a "$LOG"; }
 sec()   { log ""; log "################ $* ################"; }
 url()   { log "-> simpledisplay://$1"; $SSH "open 'simpledisplay://$1'"; }
+ctl()   { log "-> simpledisplayctl $*"; $SSH "/usr/local/bin/simpledisplayctl $*"; }
 probe() { $SSH "/tmp/cgprobe $*" | tee -a "$LOG"; }
 applog(){ $SSH "sudo log show --info --predicate 'subsystem == \"app.simpledisplay\"' --last ${1:-40s} --style compact 2>/dev/null | grep -v '^Timestamp' | grep -vE 'Filtering|^\s*$' | tail -${2:-25}" | sed 's/^/   LOG /' | tee -a "$LOG"; }
 status() {
@@ -87,17 +88,18 @@ check "Retina es HiDPI 1600x900" "$ST" "[d for d in items if d['name']=='Retina'
 TWIN1=$(q "$ST" "[d['id'] for d in items if d['name']=='Twin'][0]")
 TWIN2=$(q "$ST" "[d['id'] for d in items if d['name']=='Twin'][1]")
 RET=$(q "$ST" "[d['id'] for d in items if d['name']=='Retina'][0]")
-log "ids: TWIN1=$TWIN1 TWIN2=$TWIN2 RET=$RET"
+RET_UUID=$(probe | grep "PROBE id=$RET " | sed 's/.*uuid=\([^ ]*\).*/\1/')
+log "ids: TWIN1=$TWIN1 TWIN2=$TWIN2 RET=$RET  RET_UUID=$RET_UUID"
 
 sec "A gemelos: apagar Twin#1, el otro Twin conserva nombre y fila"
-url "disable?id=$TWIN1"; sleep 7
+ctl disable --id $TWIN1; sleep 7
 snap A1
 check "Twin#1 sigue listado (fantasma) y apagado" "$ST" "[d for d in items if d['id']==$TWIN1][0]['on']==False"
 check "Twin#1 conserva el nombre 'Twin'" "$ST" "[d for d in items if d['id']==$TWIN1][0]['name']=='Twin'"
 check "Twin#2 sigue encendido y con nombre 'Twin'" "$ST" "[d for d in items if d['id']==$TWIN2][0]['on'] and [d for d in items if d['id']==$TWIN2][0]['name']=='Twin'"
 check "siguen 4 filas (ninguna desaparecio)" "$ST" "len(items)==4"
 ONLINE=$(probe | grep -c "PROBE id=$TWIN1 "); check_str "CG: Twin#1 fuera de la lista online (0=si)" "$ONLINE" "0"
-url "enable?id=$TWIN1"; sleep 9
+ctl enable --id $TWIN1; sleep 9
 snap A2
 check "Twin#1 encendido de nuevo" "$ST" "[d for d in items if d['id']==$TWIN1][0]['on']"
 check "los 4 encendidos" "$ST" "len(items)==4 and all(d['on'] for d in items)"
@@ -152,8 +154,8 @@ log "-> relanzar la app: quien herede el slot de serial de Twin#2 no debe hereda
 $SSH 'pkill -x SimpleDisplay; sleep 2; open -a SimpleDisplay'; sleep 14
 snap D3
 check "tras relanzar: 3 filas encendidas" "$ST" "len(items)==3 and all(d['on'] for d in items)"
-RETMODE=$(q "$ST" "'%sx%s hidpi=%s' % tuple([(d['width'],d['height'],d['hidpi']) for d in items if d['name']=='Retina'][0])")
-log "   INFO  Retina tras relanzar: $RETMODE (issue preexistente de main: el slot de serial se reasigna y macOS recuerda el modo por identidad; ver informe)"
+check "Retina sigue 1600x900 HiDPI tras relanzar (serial persistente: no hereda el slot de Twin#2)" "$ST" "[d for d in items if d['name']=='Retina'][0]['hidpi'] and [d for d in items if d['name']=='Retina'][0]['width']==1600"
+RET_UUID_NOW=$(probe | grep "px=3200x1800" | sed 's/.*uuid=\([^ ]*\).*/\1/'); check_str "Retina conserva su UUID (identidad) tras relanzar" "$RET_UUID_NOW" "$RET_UUID"
 applog 60s 15
 TWIN1=$(q "$ST" "[d['id'] for d in items if d['name']=='Twin'][0]")
 RET=$(q "$ST" "[d['id'] for d in items if d['name']=='Retina'][0]")
@@ -214,7 +216,7 @@ log "   esperando 14 s a que venza la cuenta atras"; sleep 14
 snap G2
 check "la consola volvio sola al vencer la cuenta atras" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']"
 P=$(persisted); check_str "persistencia: consola isDisabled=false tras revertir" "$(hl "$P" "$CONSOLE_UUID" isDisabled)" "False"
-url "disable?id=$CONSOLE&headless=true"; sleep 6
+ctl disable --id $CONSOLE --headless; sleep 6
 snap G3
 check "con headless=true la consola queda apagada" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']==False"
 P=$(persisted); check_str "persistido headless=true" "$(hl "$P" "$CONSOLE_UUID" headless)" "True"
@@ -247,7 +249,7 @@ url "mirror?id=$TWIN1"; sleep 6
 snap M1
 check "espejar un VIRTUAL se rechaza: Twin sigue sin espejo" "$ST" "[d for d in items if d['id']==$TWIN1][0]['mirrorOf']==0"
 wscheck "tras rechazar el espejo del virtual"
-url "mirror?id=$CONSOLE"; sleep 10
+ctl mirror --id $CONSOLE; sleep 10
 snap M2
 wscheck "tras espejar la consola"
 check "la consola espeja al display main (un virtual)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['mirrorOf']!=0 and [d for d in items if d['id']==$CONSOLE][0]['mirrorOf']==[d for d in items if d['main']][0]['id']"
@@ -260,7 +262,7 @@ $SSH 'pkill -x SimpleDisplay; sleep 2; open -a SimpleDisplay'; sleep 16
 snap M3
 wscheck "tras relanzar con espejo persistido"
 check "tras relanzar, la consola vuelve espejada a un display encendido" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['mirrorOf'] in [d['id'] for d in items if d['on'] and d['id']!=$CONSOLE]"
-url "unmirror?id=$CONSOLE"; sleep 8
+ctl unmirror --id $CONSOLE; sleep 8
 snap M4
 check "sin espejos" "$ST" "all(d['mirrorOf']==0 for d in items)"
 check "la consola volvio a su modo nativo 1920x1080" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['width']==1920"
