@@ -25,7 +25,7 @@ for id in online {
     } ?? "nomode"
     let modes = (CGDisplayCopyAllDisplayModes(id, [kCGDisplayShowDuplicateLowResolutionModes: true] as CFDictionary) as? [CGDisplayMode] ?? [])
         .map { "\($0.width)x\($0.height)\($0.pixelWidth != $0.width ? "@2x" : "")" }
-    print("PROBE id=\(id) active=\(active.contains(id) ? 1 : 0) isActive=\(CGDisplayIsActive(id)) main=\(id == main ? 1 : 0) builtin=\(CGDisplayIsBuiltin(id)) uuid=\(uuid) \(m) modes=[\(modes.joined(separator: ","))]")
+    print("PROBE id=\(id) active=\(active.contains(id) ? 1 : 0) isActive=\(CGDisplayIsActive(id)) main=\(id == main ? 1 : 0) builtin=\(CGDisplayIsBuiltin(id)) mirrorOf=\(CGDisplayMirrorsDisplay(id)) uuid=\(uuid) \(m) modes=[\(modes.joined(separator: ","))]")
 }
 // UUID -> ID resolution, for UUIDs passed as arguments (tests the same call the app uses).
 for arg in CommandLine.arguments.dropFirst() {

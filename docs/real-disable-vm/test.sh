@@ -47,9 +47,9 @@ show() { # show <json>
   python3 -c '
 import json,sys
 items=json.loads(sys.argv[1])
-print("   %-4s %-10s %-4s %-3s %-4s %-5s %s" % ("id","name","virt","on","main","hidpi","mode"))
+print("   %-4s %-10s %-4s %-3s %-4s %-5s %-6s %s" % ("id","name","virt","on","main","hidpi","mirror","mode"))
 for d in items:
-    print("   %-4s %-10s %-4s %-3s %-4s %-5s %sx%s" % (d["id"],d["name"],int(d["virtual"]),int(d["on"]),int(d["main"]),int(d["hidpi"]),d["width"],d["height"]))
+    print("   %-4s %-10s %-4s %-3s %-4s %-5s %-6s %sx%s" % (d["id"],d["name"],int(d["virtual"]),int(d["on"]),int(d["main"]),int(d["hidpi"]),d.get("mirrorOf",0),d["width"],d["height"]))
 ' "$1" | tee -a "$LOG"
 }
 q() { # q <json> <python-expr over items>  (ej: q "$S" "[d['id'] for d in items if d['name']=='Twin'][0]")
@@ -200,6 +200,83 @@ snap E2
 check "consola encendida de nuevo" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']"
 check "todos encendidos" "$ST" "all(d['on'] for d in items)"
 applog 60s 15
+
+sec "G ultimo display visible: cuenta atras, confirmacion headless y recuperacion al arrancar"
+hl() { python3 -c 'import sys,json; d=[x for x in json.loads(sys.argv[1]) if x.get("uuid")==sys.argv[2]]; print(d[0].get(sys.argv[3]) if d else "missing")' "$1" "$2" "$3"; }
+snap G0
+CONSOLE=$(q "$ST" "[d['id'] for d in items if not d['virtual'] and d['width']>0][0]")
+CONSOLE_UUID=$(probe | grep "PROBE id=$CONSOLE " | sed 's/.*uuid=\([^ ]*\).*/\1/'); log "consola id=$CONSOLE uuid=$CONSOLE_UUID"
+url "disable?id=$CONSOLE"; sleep 6
+snap G1
+check "consola apagada (cuenta atras corriendo)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']==False"
+P=$(persisted); check_str "persistido como apagado NO confirmado (headless ausente)" "$(hl "$P" "$CONSOLE_UUID" headless)" "None"
+log "   esperando 14 s a que venza la cuenta atras"; sleep 14
+snap G2
+check "la consola volvio sola al vencer la cuenta atras" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']"
+P=$(persisted); check_str "persistencia: consola isDisabled=false tras revertir" "$(hl "$P" "$CONSOLE_UUID" isDisabled)" "False"
+url "disable?id=$CONSOLE&headless=true"; sleep 6
+snap G3
+check "con headless=true la consola queda apagada" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']==False"
+P=$(persisted); check_str "persistido headless=true" "$(hl "$P" "$CONSOLE_UUID" headless)" "True"
+log "   esperando 17 s: con headless confirmado no debe revertirse"; sleep 17
+snap G4
+check "sigue apagada tras 17 s (sin cuenta atras)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']==False"
+log "-> relanzar la app: un headless confirmado se reaplica"
+$SSH 'pkill -x SimpleDisplay; sleep 2; open -a SimpleDisplay'; sleep 14
+snap G5
+check "tras relanzar la consola sigue apagada (headless confirmado)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']==False"
+url "enable?id=$CONSOLE"; sleep 8
+snap G6
+check "consola encendida de nuevo" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']"
+url "disable?id=$CONSOLE"; sleep 4
+log "-> pkill DURANTE la cuenta atras (simula crash); relanzar"
+$SSH 'pkill -x SimpleDisplay; sleep 2; open -a SimpleDisplay'; sleep 16
+snap G7
+check "al arrancar sin pantalla visible y sin headless confirmado, la consola se recupera sola" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']"
+P=$(persisted); check_str "persistencia limpia tras la recuperacion (isDisabled=false)" "$(hl "$P" "$CONSOLE_UUID" isDisabled)" "False"
+applog 120s 20
+
+sec "M espejo: solo un display FISICO puede espejar; un virtual como esclavo crashea el WindowServer"
+WS0=$($SSH 'pgrep -x WindowServer'); log "WindowServer pid=$WS0"
+wscheck() { local ws; ws=$($SSH 'pgrep -x WindowServer'); check_str "$1: el WindowServer sigue siendo el mismo proceso" "$ws" "$WS0"; }
+snap M0
+CONSOLE=$(q "$ST" "[d['id'] for d in items if not d['virtual'] and d['width']>0][0]")
+TWIN1=$(q "$ST" "[d['id'] for d in items if d['name']=='Twin'][0]")
+MAIN0=$(q "$ST" "[d['id'] for d in items if d['main']][0]"); log "consola=$CONSOLE twin=$TWIN1 main=$MAIN0"
+url "mirror?id=$TWIN1"; sleep 6
+snap M1
+check "espejar un VIRTUAL se rechaza: Twin sigue sin espejo" "$ST" "[d for d in items if d['id']==$TWIN1][0]['mirrorOf']==0"
+wscheck "tras rechazar el espejo del virtual"
+url "mirror?id=$CONSOLE"; sleep 10
+snap M2
+wscheck "tras espejar la consola"
+check "la consola espeja al display main (un virtual)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['mirrorOf']!=0 and [d for d in items if d['id']==$CONSOLE][0]['mirrorOf']==[d for d in items if d['main']][0]['id']"
+check "la consola sigue encendida (espejar no es apagar)" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['on']"
+TARGET=$(q "$ST" "[d for d in items if d['id']==$CONSOLE][0]['mirrorOf']")
+MIR=$(probe | grep -c "PROBE id=$CONSOLE .*mirrorOf=$TARGET "); check_str "CG: CGDisplayMirrorsDisplay(consola) == $TARGET" "$MIR" "1"
+P=$(persisted); check_str "persistido mirrorOf de la consola apunta a un UUID" "$(python3 -c 'import sys,json; d=[x for x in json.loads(sys.argv[1]) if x.get("uuid")==sys.argv[2]]; print(bool(d and d[0].get("mirrorOf")))' "$P" "$CONSOLE_UUID")" "True"
+log "-> relanzar: el espejo persistido se reaplica"
+$SSH 'pkill -x SimpleDisplay; sleep 2; open -a SimpleDisplay'; sleep 16
+snap M3
+wscheck "tras relanzar con espejo persistido"
+check "tras relanzar, la consola vuelve espejada a un display encendido" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['mirrorOf'] in [d['id'] for d in items if d['on'] and d['id']!=$CONSOLE]"
+url "unmirror?id=$CONSOLE"; sleep 8
+snap M4
+check "sin espejos" "$ST" "all(d['mirrorOf']==0 for d in items)"
+check "la consola volvio a su modo nativo 1920x1080" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['width']==1920"
+P=$(persisted); check_str "persistencia sin mirrorOf" "$(python3 -c 'import sys,json; d=[x for x in json.loads(sys.argv[1]) if x.get("mirrorOf")]; print(len(d))' "$P")" "0"
+url "mirror?id=$CONSOLE"; sleep 10
+snap M5
+TARGET=$(q "$ST" "[d for d in items if d['id']==$CONSOLE][0]['mirrorOf']"); log "la consola espeja a $TARGET; ahora apago ese destino"
+url "disable?id=$TARGET"; sleep 10
+snap M6
+wscheck "tras apagar el destino de un espejo"
+check "apagar el destino disuelve el espejo primero: la consola queda sin espejo y encendida" "$ST" "[d for d in items if d['id']==$CONSOLE][0]['mirrorOf']==0 and [d for d in items if d['id']==$CONSOLE][0]['on']"
+check "el destino quedo apagado" "$ST" "[d for d in items if d['id']==$TARGET][0]['on']==False"
+url "enable?id=$TARGET"; sleep 9
+snap M7
+check "todos encendidos y sin espejos" "$ST" "all(d['on'] for d in items) and all(d['mirrorOf']==0 for d in items)"
+applog 120s 20
 
 sec "F sleep/wake (puede no estar soportado en VM)"
 log "pmset: $($SSH 'pmset -g 2>/dev/null | grep -iE "^ (sleep|hibernatemode|standby)" | tr -s " " | tr "\n" ";"')"
