@@ -12,7 +12,11 @@ struct SimpleDisplayApp: App {
                 .environment(locale)
                 .onAppear { appDelegate.viewModel.locale = locale }
         } label: {
-            Label("SimpleDisplay", systemImage: "display")
+            Label {
+                Text(verbatim: "SimpleDisplay")
+            } icon: {
+                Image(nsImage: BrandAssets.menuBarIcon)
+            }
         }
         .menuBarExtraStyle(.window)
     }

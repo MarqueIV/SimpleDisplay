@@ -16,14 +16,7 @@ struct MenuBarContentView: View {
                 Button {
                     viewModel.navigate(to: .settings)
                 } label: {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(.linearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .frame(width: 24, height: 24)
-                        Image(systemName: "display")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.white)
-                    }
+                    AppIconView(size: 24)
                 }
                 .buttonStyle(.borderless)
                 .disabled(viewModel.isNavigating)

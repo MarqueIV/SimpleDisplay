@@ -38,14 +38,7 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 // About card at top
                 HStack(spacing: 14) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(.linearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .frame(width: 48, height: 48)
-                        Image(systemName: "display")
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundStyle(.white)
-                    }
+                    AppIconView(size: 48)
                     VStack(alignment: .leading, spacing: 3) {
                         Text(verbatim: "SimpleDisplay")
                             .font(.system(.body, weight: .semibold))

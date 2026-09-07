@@ -19,6 +19,8 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parent.parent
 LOGO_SVG = ROOT / "branding" / "logo.svg"
+MENUBAR_SVG = ROOT / "branding" / "menubar-icon.svg"
+APP_RESOURCES = ROOT / "Sources" / "SimpleDisplay" / "Resources"
 ASSETS = ROOT / "branding" / "assets"
 WEBSITE = ROOT / "website"
 WEBSITE_ASSETS = WEBSITE / "assets"
@@ -29,6 +31,19 @@ def svg_to_png(svg: Path, out: Path, size: int):
         ["rsvg-convert", str(svg), "-o", str(out), "-w", str(size), "-h", str(size)],
         check=True,
     )
+
+
+def create_hidpi_tiff(svg: Path, out: Path, points: int):
+    """Multi-resolution TIFF (1x + 2x) for an NSImage; NSImage picks the rep for
+    the screen's scale. Rasterized on purpose: rsvg turns the SVG mask into a PDF
+    soft mask that NSImage renders almost blank."""
+    tmp = out.parent / f"{out.stem}.png"
+    tmp2x = out.parent / f"{out.stem}@2x.png"
+    svg_to_png(svg, tmp, points)
+    svg_to_png(svg, tmp2x, points * 2)
+    subprocess.run(["tiffutil", "-cathidpicheck", str(tmp), str(tmp2x), "-out", str(out)], check=True)
+    tmp.unlink()
+    tmp2x.unlink()
 
 
 def create_favicon(png: Path, out: Path):
@@ -70,6 +85,12 @@ def main():
     print("  assets/logo-512.png")
     print("  assets/favicon.ico")
     print("  assets/AppIcon.icns")
+
+    # Menu bar status item glyph (template image, bundled with the app)
+    create_hidpi_tiff(MENUBAR_SVG, APP_RESOURCES / "MenuBarIcon.tiff", 18)
+    svg_to_png(MENUBAR_SVG, ASSETS / "menubar-icon@2x.png", 36)
+    print("  Sources/SimpleDisplay/Resources/MenuBarIcon.tiff (18 + 36 px)")
+    print("  assets/menubar-icon@2x.png (preview)")
 
     # Copy to destinations
     print("\nCopying...")
