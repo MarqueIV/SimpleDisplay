@@ -49,6 +49,41 @@ struct MenuBarContentView: View {
 
             Divider()
 
+            // Headless countdown: the last visible display was just turned off.
+            // Whoever can still see this (a remote session) may keep it; nobody
+            // confirming turns the screen back on.
+            if let pending = viewModel.headlessPending {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "display.trianglebadge.exclamationmark")
+                            .foregroundStyle(.red)
+                        Text(verbatim: locale.t("headless_warning"))
+                            .font(.caption)
+                            .fontWeight(.medium)
+                        Spacer()
+                        Text(verbatim: locale.t("headless_countdown_format", pending.secondsLeft))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack(spacing: 8) {
+                        Button(locale.t("headless_revert")) {
+                            viewModel.revertHeadless()
+                        }
+                        .controlSize(.small)
+                        Button(locale.t("headless_keep")) {
+                            viewModel.confirmHeadless()
+                        }
+                        .controlSize(.small)
+                        Spacer()
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(.red.opacity(0.1))
+
+                Divider()
+            }
+
             // Error banner
             if let error = viewModel.errorMessage {
                 HStack(spacing: 8) {

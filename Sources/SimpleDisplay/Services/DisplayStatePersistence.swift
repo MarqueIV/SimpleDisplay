@@ -14,6 +14,12 @@ struct PersistedDisplayState: Codable {
     /// for backward compatibility with state written by older versions.
     var lastKnownID: UInt32?
     var name: String?
+    /// True once the user confirmed turning off the last visible (physical)
+    /// display. Only then may the app re-apply that disable on launch without
+    /// the revert countdown; an unconfirmed one is undone instead.
+    var headless: Bool?
+    /// UUID of the display this one mirrors, when the user chose to mirror it.
+    var mirrorOf: String?
 }
 
 @MainActor
@@ -29,16 +35,30 @@ final class DisplayStatePersistence {
         loadConfigs().first { $0.uuid == uuid }
     }
 
-    func recordDisabled(uuid: String, id: CGDirectDisplayID, name: String) {
+    func recordDisabled(uuid: String, id: CGDirectDisplayID, name: String, headless: Bool = false) {
         upsert(uuid: uuid) {
             $0.isDisabled = true
             $0.lastKnownID = id
             $0.name = name
+            $0.headless = headless ? true : nil
+            // A disabled display shows nothing, so any mirror choice is moot.
+            $0.mirrorOf = nil
         }
     }
 
     func recordEnabled(uuid: String) {
-        upsert(uuid: uuid) { $0.isDisabled = false }
+        upsert(uuid: uuid) {
+            $0.isDisabled = false
+            $0.headless = nil
+        }
+    }
+
+    func recordMirror(uuid: String, of targetUUID: String) {
+        upsert(uuid: uuid) { $0.mirrorOf = targetUUID }
+    }
+
+    func recordUnmirror(uuid: String) {
+        upsert(uuid: uuid) { $0.mirrorOf = nil }
     }
 
     /// Marks `uuid` as main and clears the flag on every other entry.

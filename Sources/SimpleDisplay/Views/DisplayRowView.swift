@@ -37,7 +37,7 @@ struct DisplayRowView: View {
                 HStack(spacing: 6) {
                     if display.isMain {
                         BadgeView(text: locale.t("badge_main"), color: .blue)
-                    } else if display.isActive && !display.isVirtual {
+                    } else if display.isActive && !display.isVirtual && !display.isMirrored {
                         Button {
                             viewModel.setAsMainDisplay(display)
                         } label: {
@@ -56,6 +56,12 @@ struct DisplayRowView: View {
                     if !display.isActive {
                         BadgeView(text: locale.t("badge_disabled"), color: .orange)
                     }
+                    if display.isMirrored {
+                        BadgeView(
+                            text: locale.t("badge_mirror_of_format", viewModel.displayName(for: display.mirroredToDisplayID)),
+                            color: .teal
+                        )
+                    }
                 }
                 if !display.isPlaceholder {
                     Text(verbatim: display.currentMode.localizedResolutionString(locale))
@@ -65,6 +71,22 @@ struct DisplayRowView: View {
             }
 
             Spacer()
+
+            // Mirror onto main / stop mirroring: a separate, reversible state
+            // from on/off. Physical displays only: a virtual display as a mirror
+            // slave crashes the window server. Needs another display to mirror onto.
+            if display.isActive && !display.isVirtual {
+                Button {
+                    viewModel.toggleMirror(display)
+                } label: {
+                    Image(systemName: display.isMirrored ? "rectangle.on.rectangle.fill" : "rectangle.on.rectangle")
+                        .font(.callout)
+                        .foregroundStyle(display.isMirrored ? .teal : .secondary)
+                }
+                .buttonStyle(.borderless)
+                .help(locale.t(display.isMirrored ? "unmirror_button_help" : "mirror_button_help"))
+                .disabled(viewModel.isBusy || (!display.isMirrored && viewModel.activeDisplays.count < 2))
+            }
 
             // Enable/Disable toggle
             Toggle("", isOn: Binding(

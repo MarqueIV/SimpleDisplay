@@ -16,6 +16,15 @@ enum NavigationState: Equatable {
     case configuringDisplay(CGDirectDisplayID)
 }
 
+/// The last visible (physical) display was just turned off. Unless the user
+/// confirms within the countdown, it is turned back on.
+struct HeadlessPending: Equatable {
+    let uuid: String
+    let id: CGDirectDisplayID
+    let name: String
+    var secondsLeft: Int
+}
+
 @MainActor
 @Observable
 final class DisplayManagerViewModel {
@@ -54,6 +63,10 @@ final class DisplayManagerViewModel {
     /// entirely, so we synthesize a row from this cache to keep it visible and
     /// re-enableable rather than letting it silently disappear.
     private var disabledGhosts: [String: DisplayInfo] = [:]
+
+    /// Countdown shown after the last visible display was turned off.
+    var headlessPending: HeadlessPending?
+    private var headlessTask: Task<Void, Never>?
 
     init() {
         virtualService.onDisplayTerminated = { [weak self] id in
@@ -235,10 +248,32 @@ final class DisplayManagerViewModel {
         displays.filter { $0.isActive }
     }
 
-    func toggleDisplay(_ display: DisplayInfo) {
+    /// Displays that currently put pixels on a physical panel. A mirrored
+    /// physical display counts (it shows a copy); a virtual display never does.
+    var visibleDisplays: [DisplayInfo] {
+        displays.filter { $0.isActive && !$0.isVirtual }
+    }
+
+    /// True when turning `display` off would leave this Mac with no visible
+    /// screen: only virtual displays would remain. That is the dead state the
+    /// headless countdown guards against.
+    func wouldLeaveNoVisibleDisplay(_ display: DisplayInfo) -> Bool {
+        display.isActive && !display.isVirtual && !visibleDisplays.contains { $0.id != display.id }
+    }
+
+    func displayName(for id: CGDirectDisplayID) -> String {
+        displays.first { $0.id == id }?.name ?? "Display \(id)"
+    }
+
+    /// Turns a display off (for real) or back on. `headless: true` confirms up
+    /// front that turning off the last visible display is intended (scripted or
+    /// remote use); otherwise that case runs a revert countdown.
+    func toggleDisplay(_ display: DisplayInfo, headless: Bool = false) {
         guard !isBusy else { return }
         let wasEnabled = display.isActive
         let uuid = display.uuid
+        // Turning this one off would leave only virtual displays: nothing visible.
+        let goesHeadless = wasEnabled && wouldLeaveNoVisibleDisplay(display)
         // A ghost is a disabled display that has left the online list; its row
         // is synthesized from retained identity rather than live CG state.
         let wasGhost = !wasEnabled && uuid.map { disabledGhosts[$0] != nil } ?? false
@@ -253,6 +288,9 @@ final class DisplayManagerViewModel {
             defer { isBusy = false; busyMessage = nil }
 
             if wasEnabled {
+                // A member of a mirror set must leave it before being disabled,
+                // in its own settled transaction.
+                await dissolveMirrors(involving: display)
                 do { try displayService.disableDisplay(display.id, allDisplays: displays) } catch {
                     errorMessage = error.localizedDescription
                     return
@@ -261,9 +299,21 @@ final class DisplayManagerViewModel {
                 // online list (both in-session and across an app restart).
                 if let uuid {
                     disabledGhosts[uuid] = display.asDisabledGhost()
-                    statePersistence.recordDisabled(uuid: uuid, id: display.id, name: display.name)
+                    // Only a confirmed headless disable may be re-applied on launch.
+                    statePersistence.recordDisabled(
+                        uuid: uuid, id: display.id, name: display.name,
+                        headless: goesHeadless && headless
+                    )
+                    if goesHeadless && !headless {
+                        startHeadlessCountdown(uuid: uuid, id: display.id, name: display.name)
+                    }
                 }
             } else {
+                // Re-enabling by hand mid-countdown is the same as reverting.
+                if let uuid, headlessPending?.uuid == uuid {
+                    headlessTask?.cancel()
+                    headlessPending = nil
+                }
                 // Prefer the ID macOS assigns the UUID right now; the retained one
                 // is the fallback for when the UUID does not resolve while disabled.
                 let targetID = uuid.flatMap { displayService.displayID(forUUID: $0) } ?? display.id
@@ -297,26 +347,181 @@ final class DisplayManagerViewModel {
                 restoreMode(modeToRestore, forUUID: uuid)
             }
 
-            // Safety: re-enable a display if all got disabled
-            if wasEnabled {
-                let active = displays.filter { $0.isActive }
-                if active.isEmpty {
-                    let fallback = displays.first(where: { $0.isBuiltIn }) ?? displays.first
+            // Safety: nothing visible left and no countdown handling it (defensive;
+            // disabling the very last display already fails at the main transfer).
+            if wasEnabled && !goesHeadless && visibleDisplays.isEmpty {
+                let fallback = displays.first(where: { $0.isBuiltIn && !$0.isActive })
+                    ?? displays.first(where: { !$0.isVirtual && !$0.isActive })
+                do {
                     if let target = fallback {
                         busyMessage = t("re_enabling_format", target.name)
-                        do {
-                            try displayService.enableDisplay(target.id)
-                            if let uuid = target.uuid {
-                                statePersistence.recordEnabled(uuid: uuid)
-                            }
-                            await settleAndRefresh()
-                        } catch {
-                            errorMessage = t("all_disabled_error", error.localizedDescription)
+                        let targetID = target.uuid.flatMap { displayService.displayID(forUUID: $0) } ?? target.id
+                        try displayService.enableDisplay(targetID)
+                        if let uuid = target.uuid {
+                            statePersistence.recordEnabled(uuid: uuid)
                         }
+                        await settleAndRefresh()
                     }
+                } catch {
+                    errorMessage = t("all_disabled_error", error.localizedDescription)
                 }
             }
         }
+    }
+
+    // MARK: - Headless Countdown
+
+    private static let headlessCountdownSeconds = 15
+
+    private func startHeadlessCountdown(uuid: String, id: CGDirectDisplayID, name: String) {
+        headlessTask?.cancel()
+        headlessPending = HeadlessPending(uuid: uuid, id: id, name: name, secondsLeft: Self.headlessCountdownSeconds)
+        headlessTask = Task { [weak self] in
+            for _ in 0..<Self.headlessCountdownSeconds {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled, let self, self.headlessPending != nil else { return }
+                self.headlessPending?.secondsLeft -= 1
+            }
+            guard !Task.isCancelled, let self else { return }
+            self.revertHeadless()
+        }
+    }
+
+    /// The user, typically from a remote session, wants this Mac to stay
+    /// without a visible screen. Persisted as confirmed so launch re-applies it.
+    func confirmHeadless() {
+        guard let pending = headlessPending else { return }
+        headlessTask?.cancel()
+        headlessPending = nil
+        statePersistence.recordDisabled(uuid: pending.uuid, id: pending.id, name: pending.name, headless: true)
+        logger.info("Headless confirmed for '\(pending.name)'")
+    }
+
+    /// Countdown expired, or the user asked for the screen back.
+    func revertHeadless() {
+        guard let pending = headlessPending else { return }
+        headlessTask?.cancel()
+        headlessPending = nil
+        Task { await bringBack(pending) }
+    }
+
+    private func bringBack(_ pending: HeadlessPending) async {
+        // Do not overlap CG transactions with an operation still in flight.
+        while isBusy { try? await Task.sleep(for: .milliseconds(200)) }
+        isBusy = true
+        busyMessage = t("enabling_format", pending.name)
+        defer { isBusy = false; busyMessage = nil }
+        let targetID = displayService.displayID(forUUID: pending.uuid) ?? pending.id
+        do {
+            try displayService.enableDisplay(targetID)
+            statePersistence.recordEnabled(uuid: pending.uuid)
+            logger.info("Headless countdown reverted: '\(pending.name)' is back on")
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        await settleAndRefresh()
+    }
+
+    // MARK: - Mirror
+
+    /// Mirrors `display` onto the main display, or stops mirroring it. A
+    /// separate action from on/off: the panel stays on and shows a copy, which
+    /// some users prefer to a dark screen, and it still counts as visible.
+    /// Only physical displays may be mirror slaves: mirroring a virtual display
+    /// onto anything crashes the window server on macOS 26 (verified in
+    /// docs/real-disable-vm, both onto a physical and onto another virtual).
+    /// A physical display mirroring a virtual one is fine and is the remote
+    /// desktop use case.
+    func toggleMirror(_ display: DisplayInfo) {
+        guard !isBusy, display.isActive else { return }
+        guard !display.isVirtual else {
+            errorMessage = t("mirror_virtual_unsupported")
+            return
+        }
+        isBusy = true
+        busyMessage = display.isMirrored
+            ? t("unmirroring_format", display.name)
+            : t("mirroring_format", display.name)
+        Task {
+            defer { isBusy = false; busyMessage = nil }
+            if display.isMirrored {
+                do { try displayService.unmirrorDisplay(display.id) } catch {
+                    errorMessage = error.localizedDescription
+                    return
+                }
+                if let uuid = display.uuid { statePersistence.recordUnmirror(uuid: uuid) }
+                await settleAndRefresh()
+            } else {
+                await mirror(display, onto: nil)
+            }
+        }
+    }
+
+    /// Mirrors `display` onto `target` (main when nil) as separate, settled
+    /// steps: transfer main away from the display if needed, wait, then mirror,
+    /// wait, then verify the window server still reports active displays.
+    /// Back-to-back transactions left it with none (docs/real-disable-vm).
+    private func mirror(_ display: DisplayInfo, onto target: CGDirectDisplayID?) async {
+        // Hard stop, whatever the caller: a virtual mirror slave kills the window server.
+        guard !display.isVirtual else {
+            logger.error("Refusing to mirror virtual display '\(display.name)'")
+            errorMessage = t("mirror_virtual_unsupported")
+            return
+        }
+        var targetID = target ?? CGMainDisplayID()
+        if display.isMain {
+            guard let newMain = target ?? displayService.bestNewMain(excluding: display.id, in: displays) else {
+                errorMessage = t("all_disabled_error", "no other display to mirror onto")
+                return
+            }
+            do { try displayService.setMainDisplay(newMain) } catch {
+                errorMessage = error.localizedDescription
+                return
+            }
+            await settleAndRefresh()
+            targetID = newMain
+            guard displays.contains(where: { $0.id == display.id && $0.isActive }),
+                  displays.contains(where: { $0.id == targetID && $0.isActive }) else {
+                errorMessage = t("all_disabled_error", "displays did not settle after moving main")
+                return
+            }
+        }
+        do { try displayService.mirrorDisplay(display.id, onto: targetID) } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
+        await settleAndRefresh()
+        guard displayService.activeDisplayCount() > 0 else {
+            // The window server lost every display: undo immediately rather than
+            // leave the Mac blind.
+            logger.error("Mirroring '\(display.name)' left zero active displays; undoing")
+            try? displayService.unmirrorDisplay(display.id)
+            await settleAndRefresh()
+            errorMessage = t("all_disabled_error", "mirror left no active display; reverted")
+            return
+        }
+        if let uuid = display.uuid, let targetUUID = displayService.uuid(for: targetID) {
+            statePersistence.recordMirror(uuid: uuid, of: targetUUID)
+        }
+    }
+
+    /// Breaks every mirror relationship `display` takes part in (as source or
+    /// as target), one settled transaction each. Persisted mirror choices are
+    /// kept unless `forget` is set: turning a display off is not a change of
+    /// mind about mirroring.
+    private func dissolveMirrors(involving display: DisplayInfo, forget: Bool = false) async {
+        var touched = false
+        for slave in displays where slave.mirroredToDisplayID == display.id {
+            if (try? displayService.unmirrorDisplay(slave.id)) != nil {
+                touched = true
+                if forget, let uuid = slave.uuid { statePersistence.recordUnmirror(uuid: uuid) }
+            }
+        }
+        if display.isMirrored, (try? displayService.unmirrorDisplay(display.id)) != nil {
+            touched = true
+            if forget, let uuid = display.uuid { statePersistence.recordUnmirror(uuid: uuid) }
+        }
+        if touched { await settleAndRefresh() }
     }
 
     // MARK: - Virtual Display Management
@@ -365,6 +570,10 @@ final class DisplayManagerViewModel {
     /// forget its persisted flags, since its UUID derives from a reusable serial
     /// slot and stale flags would apply to whichever display inherits the slot.
     private func forgetDisabledState(of display: DisplayInfo) async {
+        if display.isActive {
+            // A display about to be destroyed leaves its mirror set first.
+            await dissolveMirrors(involving: display, forget: true)
+        }
         if !display.isActive {
             let targetID = display.uuid.flatMap { displayService.displayID(forUUID: $0) } ?? display.id
             do {
@@ -469,19 +678,24 @@ final class DisplayManagerViewModel {
                 refresh()
             }
 
-        case .setEnabled(let target, let enabled):
+        case .setEnabled(let target, let enabled, let headless):
             refresh()
-            let match: DisplayInfo?
-            switch target {
-            case .id(let rawID): match = displays.first { $0.id == CGDirectDisplayID(rawID) }
-            case .name(let name): match = displays.first { $0.name == name }
-            }
-            guard let display = match else {
+            guard let display = firstDisplay(matching: target) else {
                 errorMessage = "No display matches \(String(describing: target))"
                 return
             }
             if display.isActive != enabled {
-                toggleDisplay(display)
+                toggleDisplay(display, headless: headless)
+            }
+
+        case .setMirrored(let target, let mirrored):
+            refresh()
+            guard let display = firstDisplay(matching: target) else {
+                errorMessage = "No display matches \(String(describing: target))"
+                return
+            }
+            if display.isMirrored != mirrored {
+                toggleMirror(display)
             }
 
         case .status:
@@ -506,6 +720,13 @@ final class DisplayManagerViewModel {
         }
     }
 
+    private func firstDisplay(matching target: RemoveTarget) -> DisplayInfo? {
+        switch target {
+        case .id(let rawID): return displays.first { $0.id == CGDirectDisplayID(rawID) }
+        case .name(let name): return displays.first { $0.name == name }
+        }
+    }
+
     /// Snapshot of every display for remote controllers. Written to a fixed
     /// path so an SSH caller can `open simpledisplay://status` and read it.
     private func writeStatusSnapshot() {
@@ -521,6 +742,7 @@ final class DisplayManagerViewModel {
                 "width": d.currentMode.width,
                 "height": d.currentMode.height,
                 "hidpi": d.currentMode.isHiDPI,
+                "mirrorOf": Int(d.mirroredToDisplayID),
             ]
         }
         if let data = try? JSONSerialization.data(withJSONObject: items, options: [.sortedKeys]) {
@@ -580,12 +802,18 @@ final class DisplayManagerViewModel {
         }
     }
 
-    /// Before sleep: just clear any in-flight busy state. Unlike the old
-    /// mirror-based disable, a display disabled via CGSConfigureDisplayEnabled
-    /// survives sleep cleanly, so no pre-sleep teardown is required.
+    /// Before sleep: clear in-flight state, settle a pending headless countdown
+    /// by turning the screen back on, and dissolve mirror sets (a mirrored
+    /// display could freeze on wake; the choice stays persisted and is
+    /// re-applied by `handleWake`). A display disabled via
+    /// CGSConfigureDisplayEnabled survives sleep as is.
     private func handleSleep() {
         isBusy = false
         busyMessage = nil
+        revertHeadless()
+        for display in displays where display.isMirrored {
+            try? displayService.unmirrorDisplay(display.id)
+        }
     }
 
     /// After wake: refresh, then re-apply persisted state in case macOS
@@ -615,6 +843,23 @@ final class DisplayManagerViewModel {
         await settleAndRefresh()
 
         let savedByUUID = Dictionary(uniqueKeysWithValues: saved.map { ($0.uuid, $0) })
+
+        // Recovery: this Mac has no visible screen and nobody confirmed that
+        // (the app quit during the countdown, or an older build persisted it).
+        // Bring the disabled physical displays back rather than keep the dead state.
+        if visibleDisplays.isEmpty {
+            for (uuid, ghost) in disabledGhosts where !ghost.isVirtual && savedByUUID[uuid]?.headless != true {
+                let targetID = displayService.displayID(forUUID: uuid) ?? ghost.id
+                do {
+                    try displayService.enableDisplay(targetID)
+                    statePersistence.recordEnabled(uuid: uuid)
+                    logger.warning("Recovered '\(ghost.name)': it was off with no visible display left and headless was never confirmed")
+                    await settleAndRefresh()
+                } catch {
+                    logger.warning("Could not recover '\(ghost.name)': \(error.localizedDescription)")
+                }
+            }
+        }
 
         // Step 1: restore the saved main display first. Doing this before the
         // disables avoids a chain reaction where `disableDisplay` of the current
@@ -649,9 +894,16 @@ final class DisplayManagerViewModel {
             guard let display = displays.first(where: { $0.uuid == uuid }), display.isActive else {
                 continue
             }
-            let activeCount = displays.filter { $0.isActive }.count
-            guard activeCount > 1 else {
-                logger.info("Skipping persisted disable of '\(display.name)' — would leave zero active")
+            guard displays.filter({ $0.isActive }).count > 1 else {
+                logger.info("Skipping persisted disable of '\(display.name)' — would leave zero displays")
+                continue
+            }
+            let confirmedHeadless = savedByUUID[uuid]?.headless == true
+            if wouldLeaveNoVisibleDisplay(display) && !confirmedHeadless {
+                // Never re-create the dead state on launch: an unconfirmed
+                // headless disable is dropped so logout/reboot always recovers.
+                logger.info("Dropping persisted disable of '\(display.name)' — would leave no visible display and headless was not confirmed")
+                statePersistence.recordEnabled(uuid: uuid)
                 continue
             }
             do {
@@ -659,11 +911,28 @@ final class DisplayManagerViewModel {
                 // Capture identity before the display leaves the online list, and
                 // refresh persisted id/name in case they were missing.
                 disabledGhosts[uuid] = display.asDisabledGhost()
-                statePersistence.recordDisabled(uuid: uuid, id: display.id, name: display.name)
+                statePersistence.recordDisabled(uuid: uuid, id: display.id, name: display.name, headless: confirmedHeadless)
                 logger.info("Restored disabled state on '\(display.name)'")
                 await settleAndRefresh()
             } catch {
                 logger.warning("Could not restore disabled state on '\(display.name)': \(error.localizedDescription)")
+            }
+        }
+
+        // Step 3: re-apply mirrors. Both ends must be live and enabled, neither
+        // may already be a mirror slave, and the slave must be physical.
+        for entry in saved where entry.mirrorOf != nil && !entry.isDisabled {
+            guard
+                let display = displays.first(where: { $0.uuid == entry.uuid }),
+                display.isActive, !display.isMirrored, !display.isVirtual,
+                let target = displays.first(where: { $0.uuid == entry.mirrorOf }),
+                target.isActive, !target.isMirrored, target.id != display.id
+            else { continue }
+            await mirror(display, onto: target.id)
+            if displays.contains(where: { $0.id == display.id && $0.isMirrored }) {
+                logger.info("Restored mirror of '\(display.name)' onto '\(target.name)'")
+            } else {
+                logger.warning("Could not restore mirror of '\(display.name)' onto '\(target.name)'")
             }
         }
     }

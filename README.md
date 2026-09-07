@@ -20,6 +20,7 @@
 ## Features
 
 - **Enable/Disable displays** — turn monitors off for real (they go dark and leave the desktop) and back on, without unplugging them
+- **Mirror displays** — mirror a physical display onto the main one with one click, and back; a 15 s countdown protects you from turning off your last visible screen
 - **Virtual displays** — create virtual monitors with custom resolutions and device presets (iPhone, iPad, Mac, TV)
 - **Set main display** — change your primary monitor from the menu bar
 - **HiDPI support** — create Retina virtual displays
@@ -78,7 +79,9 @@ is no separate background process to keep alive.
 | `simpledisplay://remove?id=N` or `?name=S`                              | Remove a virtual display.           |
 | `simpledisplay://reconfigure?id=N&width=N&height=N[&refresh=N][&hidpi=true]` | Resize a virtual display in place. |
 | `simpledisplay://enable?id=N` or `?name=S`                              | Turn a display back on.             |
-| `simpledisplay://disable?id=N` or `?name=S`                             | Turn a display off (it goes dark and leaves the desktop). |
+| `simpledisplay://disable?id=N` or `?name=S` `[&headless=true]`          | Turn a display off (it goes dark and leaves the desktop). If it is the last visible display, a 15 s countdown turns it back on unless someone clicks **Keep off**; `headless=true` confirms up front. |
+| `simpledisplay://mirror?id=N` or `?name=S`                              | Mirror a physical display onto the main display (virtual displays can't be mirror sources, see below). |
+| `simpledisplay://unmirror?id=N` or `?name=S`                            | Stop mirroring a display.           |
 | `simpledisplay://status`                                                | Write the display list as JSON to `/tmp/simpledisplay-status.json`. |
 
 Values are validated — dimensions clamp to 100–8192, refresh capped at 60 Hz,
@@ -117,6 +120,10 @@ is attempted so callers can offer to install it first.
 SimpleDisplay uses Apple's private `CGVirtualDisplay` API to create virtual monitors and the private `CGSConfigureDisplayEnabled` API (the same one `displayplacer` uses) to turn physical displays off and on.
 
 **Disabling a display** deactivates it at the window-server level: it goes dark and stops occupying desktop space, but stays connected. macOS drops a disabled display from its display list, so SimpleDisplay remembers its identity and keeps a greyed-out row for it until you turn it back on. The change applies to the current login session only; after a logout or reboot every display comes back, and SimpleDisplay re-applies your choice when it launches.
+
+**Turning off your last visible display** (only virtual displays would remain) is allowed, because a remote session on a virtual display may want exactly that, but it is guarded: a banner counts down 15 seconds and turns the display back on unless you click **Keep off**. Only a confirmed choice is re-applied on the next launch; if the app quits mid-countdown, it brings the display back when it starts again.
+
+**Mirroring a display** is a separate action (the mirror button next to each physical display's toggle): the display stays on and shows a copy of the main display via `CGConfigureDisplayMirrorOfDisplay`. Mirrors are re-applied on launch and dissolved before sleep to avoid a wake freeze. Only physical displays can be mirrored: making a virtual display the mirror of anything crashes the macOS window server (verified on macOS 26, see `docs/real-disable-vm`), so the app refuses it. Mirroring a physical display onto a virtual one works and is the remote desktop use case.
 
 **Virtual displays** appear as real monitors to macOS — useful for screen sharing specific resolutions, testing responsive layouts, or keeping apps running on a "hidden" screen.
 

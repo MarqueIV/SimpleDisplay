@@ -125,6 +125,52 @@ final class URLCommandTests: XCTestCase {
         XCTAssertEqual(reparsed, original)
     }
 
+    // MARK: - Enable / disable / mirror
+
+    func testParseEnableByID() throws {
+        XCTAssertEqual(try parse("simpledisplay://enable?id=3"),
+                       .setEnabled(target: .id(3), enabled: true, headless: false))
+    }
+
+    func testParseDisableDefaultsToCountdown() throws {
+        XCTAssertEqual(try parse("simpledisplay://disable?name=Dell"),
+                       .setEnabled(target: .name("Dell"), enabled: false, headless: false))
+    }
+
+    func testParseDisableHeadless() throws {
+        XCTAssertEqual(try parse("simpledisplay://disable?id=1&headless=true"),
+                       .setEnabled(target: .id(1), enabled: false, headless: true))
+    }
+
+    func testRejectsBadHeadlessBool() {
+        assertError("simpledisplay://disable?id=1&headless=maybe") { err in
+            XCTAssertEqual(err, .invalidParameter("headless", reason: "expected true/false"))
+        }
+    }
+
+    func testParseMirrorAndUnmirror() throws {
+        XCTAssertEqual(try parse("simpledisplay://mirror?id=2"),
+                       .setMirrored(target: .id(2), mirrored: true))
+        XCTAssertEqual(try parse("simpledisplay://unmirror?name=Twin"),
+                       .setMirrored(target: .name("Twin"), mirrored: false))
+    }
+
+    func testHeadlessDisableRoundTrip() throws {
+        let original = URLCommand.setEnabled(target: .id(7), enabled: false, headless: true)
+        XCTAssertEqual(try URLCommandParser.parse(original.url).get(), original)
+    }
+
+    func testEnableRoundTripHasNoHeadlessParameter() throws {
+        let original = URLCommand.setEnabled(target: .name("Side"), enabled: true, headless: false)
+        XCTAssertNil(original.url.query?.range(of: "headless"))
+        XCTAssertEqual(try URLCommandParser.parse(original.url).get(), original)
+    }
+
+    func testMirrorRoundTrip() throws {
+        let original = URLCommand.setMirrored(target: .name("Side"), mirrored: true)
+        XCTAssertEqual(try URLCommandParser.parse(original.url).get(), original)
+    }
+
     // MARK: - Helpers
 
     private func parse(_ string: String) throws -> URLCommand {

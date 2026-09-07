@@ -53,7 +53,11 @@ final class DisplayService {
         // A display disabled via CGSConfigureDisplayEnabled normally leaves the
         // online list altogether. Should one still be listed, CGDisplayIsActive
         // is what tells it apart from an active display.
-        let isEnabled = CGDisplayIsActive(displayID) != 0
+        // A mirror slave is not "active" for CoreGraphics (in a hardware mirror
+        // set only the primary is), yet it is on and showing content, so it
+        // counts as enabled here. Mirroring is tracked separately.
+        let mirrorOf = CGDisplayMirrorsDisplay(displayID)
+        let isEnabled = CGDisplayIsActive(displayID) != 0 || mirrorOf != kCGNullDirectDisplay
 
         let displayUUID = uuid(for: displayID)
 
@@ -115,6 +119,7 @@ final class DisplayService {
             isBuiltIn: CGDisplayIsBuiltin(displayID) != 0,
             isMain: CGDisplayIsMain(displayID) != 0,
             isEnabled: isEnabled,
+            mirroredToDisplayID: mirrorOf,
             physicalSize: CGDisplayScreenSize(displayID),
             backingScaleFactor: scaleMap[displayID] ?? 1.0
         )
@@ -217,18 +222,28 @@ final class DisplayService {
     /// mirroring another screen. If the target is the current main display, main
     /// is first transferred to another active display so macOS doesn't pick one
     /// arbitrarily.
+    ///
+    /// Callers must dissolve any mirror set the display takes part in first
+    /// and let the topology settle: chaining display configurations without a
+    /// settle in between has been seen to leave the window server with zero
+    /// active displays (see docs/real-disable-vm).
     func disableDisplay(_ displayID: CGDirectDisplayID, allDisplays: [DisplayInfo]) throws {
         if displayID == CGMainDisplayID() {
-            // Find the best next main: prefer built-in, then physical, then virtual.
-            let candidates = allDisplays.filter { $0.isActive && $0.id != displayID }
-            guard let newMain = candidates.first(where: { $0.isBuiltIn })
-                ?? candidates.first(where: { !$0.isVirtual })
-                ?? candidates.first else {
+            guard let newMain = bestNewMain(excluding: displayID, in: allDisplays) else {
                 throw DisplayError.configurationFailed("No other display available to transfer main")
             }
-            try setMainDisplay(newMain.id)
+            try setMainDisplay(newMain)
         }
         try setDisplayEnabled(displayID, enabled: false)
+    }
+
+    /// Best candidate to take over main: prefer built-in, then physical, then
+    /// virtual. A mirror slave cannot be main.
+    func bestNewMain(excluding displayID: CGDirectDisplayID, in allDisplays: [DisplayInfo]) -> CGDirectDisplayID? {
+        let candidates = allDisplays.filter { $0.isActive && !$0.isMirrored && $0.id != displayID }
+        return (candidates.first(where: { $0.isBuiltIn })
+            ?? candidates.first(where: { !$0.isVirtual })
+            ?? candidates.first)?.id
     }
 
     /// Re-enables a previously disabled display.
@@ -259,6 +274,47 @@ final class DisplayService {
         }
     }
 
+    // MARK: - Mirroring
+
+    /// Mirrors `displayID` onto `target`. Mirroring is a separate, reversible
+    /// state from disabling: the panel stays on and shows a copy of another
+    /// desktop. `displayID` must not be main when this is called: the caller
+    /// transfers main first and lets the topology settle, because doing both in
+    /// back-to-back transactions left the window server with zero displays.
+    func mirrorDisplay(_ displayID: CGDirectDisplayID, onto target: CGDirectDisplayID) throws {
+        guard target != displayID else {
+            throw DisplayError.configurationFailed("A display cannot mirror itself")
+        }
+        guard displayID != CGMainDisplayID() else {
+            throw DisplayError.configurationFailed("Transfer main away from the display before mirroring it")
+        }
+        try setMirror(of: displayID, to: target)
+    }
+
+    /// Stops mirroring `displayID`; it gets its own desktop back.
+    func unmirrorDisplay(_ displayID: CGDirectDisplayID) throws {
+        try setMirror(of: displayID, to: kCGNullDirectDisplay)
+    }
+
+    /// `.forSession` so a crash mid-operation reverts on logout; the persisted
+    /// state restore on launch is what makes the choice durable.
+    private func setMirror(of displayID: CGDirectDisplayID, to target: CGDirectDisplayID) throws {
+        var config: CGDisplayConfigRef?
+        guard CGBeginDisplayConfiguration(&config) == .success else {
+            throw DisplayError.configurationFailed("Could not begin configuration")
+        }
+        let err = CGConfigureDisplayMirrorOfDisplay(config, displayID, target)
+        guard err == .success else {
+            CGCancelDisplayConfiguration(config)
+            throw DisplayError.configurationFailed("Mirror configuration failed: \(err)")
+        }
+        let completeErr = CGCompleteDisplayConfiguration(config, .forSession)
+        guard completeErr == .success else {
+            CGCancelDisplayConfiguration(config)
+            throw DisplayError.configurationFailed("Complete failed: \(completeErr)")
+        }
+    }
+
     /// Counts currently active (non-mirrored) displays
     func activeDisplayCount() -> Int {
         var count: UInt32 = 0
@@ -274,7 +330,7 @@ final class DisplayService {
     /// Assigning a known profile via ColorSync API breaks the cycle without admin privileges.
     func fixDuplicateDisplayProfiles(displays: [DisplayInfo]) {
         // Find physical displays with duplicate names (identical monitors)
-        let physicalDisplays = displays.filter { !$0.isVirtual && $0.isActive }
+        let physicalDisplays = displays.filter { !$0.isVirtual && $0.isActive && !$0.isMirrored }
         let nameCount = physicalDisplays.reduce(into: [String: Int]()) { $0[$1.name, default: 0] += 1 }
         let duplicateNames = nameCount.filter { $0.value > 1 }.map { $0.key }
         guard !duplicateNames.isEmpty else { return }

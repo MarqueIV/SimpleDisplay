@@ -88,6 +88,28 @@ final class GhostReconcilerTests: XCTestCase {
         XCTAssertEqual(verdicts["A"], .collided(withLiveUUID: "B"))
     }
 
+    // MARK: - Ghost vs ghost
+
+    func testTwoGhostsWithTheSameRetainedIDKeepOnlyOne() {
+        let verdicts = GhostReconciler.reconcile(
+            ghosts: [Ghost(uuid: "B", id: 5), Ghost(uuid: "A", id: 5)],
+            live: [],
+            resolveID: noResolve
+        )
+        XCTAssertEqual(verdicts["A"], .keep(id: 5))
+        XCTAssertEqual(verdicts["B"], .collided(withLiveUUID: "A"))
+    }
+
+    func testResolvedGhostWinsOverRetainedDuplicate() {
+        let verdicts = GhostReconciler.reconcile(
+            ghosts: [Ghost(uuid: "A", id: 5), Ghost(uuid: "STALE", id: 5)],
+            live: [],
+            resolveID: { $0 == "A" ? 5 : nil }
+        )
+        XCTAssertEqual(verdicts["A"], .keep(id: 5))
+        XCTAssertEqual(verdicts["STALE"], .collided(withLiveUUID: "A"))
+    }
+
     // MARK: - Shape
 
     func testEmptyGhostsProduceNoVerdicts() {

@@ -15,16 +15,22 @@ struct DisplayInfo: Identifiable, Equatable {
     /// display drops out of the online list entirely, so `false` is mostly seen
     /// on ghost rows the view model synthesizes from retained identity.
     let isEnabled: Bool
+    /// The display this one mirrors, or `kCGNullDirectDisplay` when it shows its
+    /// own desktop. Mirroring is a separate, reversible state from disabling: a
+    /// mirrored display is still enabled and visible, it just duplicates another.
+    let mirroredToDisplayID: CGDirectDisplayID
     let physicalSize: CGSize
     let backingScaleFactor: Double
 
     var isActive: Bool { isEnabled }
+    var isMirrored: Bool { mirroredToDisplayID != kCGNullDirectDisplay }
 
     func with(name: String, isVirtual: Bool) -> DisplayInfo {
         DisplayInfo(
             id: id, uuid: uuid, name: name, currentMode: currentMode,
             availableModes: availableModes, isVirtual: isVirtual,
             isBuiltIn: isBuiltIn, isMain: isMain, isEnabled: isEnabled,
+            mirroredToDisplayID: mirroredToDisplayID,
             physicalSize: physicalSize, backingScaleFactor: backingScaleFactor
         )
     }
@@ -36,6 +42,7 @@ struct DisplayInfo: Identifiable, Equatable {
             id: id, uuid: uuid, name: name, currentMode: currentMode,
             availableModes: availableModes, isVirtual: isVirtual,
             isBuiltIn: isBuiltIn, isMain: isMain, isEnabled: isEnabled,
+            mirroredToDisplayID: mirroredToDisplayID,
             physicalSize: physicalSize, backingScaleFactor: backingScaleFactor
         )
     }
@@ -47,6 +54,7 @@ struct DisplayInfo: Identifiable, Equatable {
             id: id, uuid: uuid, name: name, currentMode: currentMode,
             availableModes: availableModes, isVirtual: isVirtual,
             isBuiltIn: isBuiltIn, isMain: false, isEnabled: false,
+            mirroredToDisplayID: kCGNullDirectDisplay,
             physicalSize: physicalSize, backingScaleFactor: backingScaleFactor
         )
     }
@@ -59,7 +67,8 @@ struct DisplayInfo: Identifiable, Equatable {
             id: id, uuid: uuid, name: name,
             currentMode: DisplayMode(width: 0, height: 0, pixelWidth: 0, pixelHeight: 0, refreshRate: 0, isHiDPI: false),
             availableModes: [], isVirtual: false, isBuiltIn: false,
-            isMain: false, isEnabled: false, physicalSize: .zero, backingScaleFactor: 1.0
+            isMain: false, isEnabled: false, mirroredToDisplayID: kCGNullDirectDisplay,
+            physicalSize: .zero, backingScaleFactor: 1.0
         )
     }
 

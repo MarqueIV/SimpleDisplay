@@ -65,6 +65,9 @@ public enum GhostReconciler {
         )
 
         var verdicts: [String: Verdict] = [:]
+        // Ghosts kept under each ID, with whether the ID came from `resolveID`
+        // (authoritative) or was merely retained.
+        var keptByID: [UInt32: [(uuid: String, resolved: Bool)]] = [:]
         for ghost in ghosts {
             if liveUUIDs.contains(ghost.uuid) {
                 verdicts[ghost.uuid] = .backOnline
@@ -72,12 +75,23 @@ public enum GhostReconciler {
             }
             // Prefer the ID macOS assigns the UUID right now; fall back to the
             // retained one while the display is disabled and unresolvable.
-            let candidate = resolveID(ghost.uuid) ?? ghost.id
+            let resolved = resolveID(ghost.uuid)
+            let candidate = resolved ?? ghost.id
             if let owner = liveOwnerByID[candidate] {
                 // `ghost.uuid` is not live, so whoever owns this ID is someone else.
                 verdicts[ghost.uuid] = .collided(withLiveUUID: owner)
             } else {
                 verdicts[ghost.uuid] = .keep(id: candidate)
+                keptByID[candidate, default: []].append((ghost.uuid, resolved != nil))
+            }
+        }
+        // Two ghosts must not share an ID either: toggling one would act on the
+        // other's display, and the UI cannot key two rows by the same ID. Keep
+        // the ghost whose UUID resolved to the ID, else the first by UUID.
+        for (_, claimants) in keptByID where claimants.count > 1 {
+            let sorted = claimants.sorted { ($0.resolved ? 0 : 1, $0.uuid) < ($1.resolved ? 0 : 1, $1.uuid) }
+            for loser in sorted.dropFirst() {
+                verdicts[loser.uuid] = .collided(withLiveUUID: sorted[0].uuid)
             }
         }
         return verdicts

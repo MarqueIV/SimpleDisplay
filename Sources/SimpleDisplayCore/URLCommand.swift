@@ -8,7 +8,13 @@ public enum URLCommand: Equatable, Sendable {
     case remove(RemoveTarget)
     case reconfigure(id: UInt32, request: VirtualDisplayRequest)
     /// Enable or disable an existing display (by id or name), idempotently.
-    case setEnabled(target: RemoveTarget, enabled: Bool)
+    /// `headless` applies to disable only: it confirms turning off the last
+    /// visible (physical) display up front, skipping the revert countdown the
+    /// app otherwise runs. Meant for scripted/remote use.
+    case setEnabled(target: RemoveTarget, enabled: Bool, headless: Bool)
+    /// Mirror a display onto the main display, or stop mirroring it. A
+    /// separate, reversible state from enable/disable.
+    case setMirrored(target: RemoveTarget, mirrored: Bool)
     /// Dump the current display list as JSON to /tmp/simpledisplay-status.json
     /// so remote controllers (SSH + open) can read machine-readable state.
     case status
@@ -33,7 +39,7 @@ public enum URLCommandError: Error, Equatable, Sendable, CustomStringConvertible
         case .wrongScheme(let found):
             return "expected scheme 'simpledisplay', got '\(found ?? "<none>")'"
         case .unknownHost(let host):
-            return "unknown action '\(host)' — expected create/remove/reconfigure/enable/disable/status/open"
+            return "unknown action '\(host)' — expected create/remove/reconfigure/enable/disable/mirror/unmirror/status/open"
         case .missingHost:
             return "URL has no action (expected simpledisplay://<action>)"
         case .missingParameter(let name):
@@ -71,9 +77,17 @@ public enum URLCommandParser {
         case "reconfigure":
             return parseReconfigure(params)
         case "enable":
-            return parseTarget(params).map { .setEnabled(target: $0, enabled: true) }
+            return parseTarget(params).map { .setEnabled(target: $0, enabled: true, headless: false) }
         case "disable":
-            return parseTarget(params).map { .setEnabled(target: $0, enabled: false) }
+            return parseTarget(params).flatMap { target in
+                parseOptionalBool(params, "headless").map {
+                    .setEnabled(target: target, enabled: false, headless: $0)
+                }
+            }
+        case "mirror":
+            return parseTarget(params).map { .setMirrored(target: $0, mirrored: true) }
+        case "unmirror":
+            return parseTarget(params).map { .setMirrored(target: $0, mirrored: false) }
         case "status":
             return .success(.status)
         case "open":
@@ -113,6 +127,12 @@ public enum URLCommandParser {
             case .failure(let e): return .failure(e)
             }
         }
+    }
+
+    /// A boolean flag that defaults to false when absent.
+    private static func parseOptionalBool(_ p: Params, _ name: String) -> Result<Bool, URLCommandError> {
+        guard let raw = p.value(name) else { return .success(false) }
+        return parseBool(raw, name: name)
     }
 
     private static func parseReconfigure(_ p: Params) -> Result<URLCommand, URLCommandError> {
@@ -278,14 +298,13 @@ extension URLCommand {
         case .reconfigure(let id, let req):
             components.host = "reconfigure"
             components.queryItems = [URLQueryItem(name: "id", value: String(id))] + requestQueryItems(req)
-        case .setEnabled(let target, let enabled):
+        case .setEnabled(let target, let enabled, let headless):
             components.host = enabled ? "enable" : "disable"
-            switch target {
-            case .id(let id):
-                components.queryItems = [URLQueryItem(name: "id", value: String(id))]
-            case .name(let name):
-                components.queryItems = [URLQueryItem(name: "name", value: name)]
-            }
+            components.queryItems = targetQueryItems(target)
+                + (headless && !enabled ? [URLQueryItem(name: "headless", value: "true")] : [])
+        case .setMirrored(let target, let mirrored):
+            components.host = mirrored ? "mirror" : "unmirror"
+            components.queryItems = targetQueryItems(target)
         case .status:
             components.host = "status"
         case .open:
@@ -295,6 +314,13 @@ extension URLCommand {
             fatalError("URLComponents failed to produce URL — this is a bug")
         }
         return url
+    }
+
+    private func targetQueryItems(_ target: RemoveTarget) -> [URLQueryItem] {
+        switch target {
+        case .id(let id): return [URLQueryItem(name: "id", value: String(id))]
+        case .name(let name): return [URLQueryItem(name: "name", value: name)]
+        }
     }
 
     private func requestQueryItems(_ r: VirtualDisplayRequest) -> [URLQueryItem] {
