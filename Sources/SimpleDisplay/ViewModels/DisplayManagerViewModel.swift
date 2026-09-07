@@ -87,7 +87,11 @@ final class DisplayManagerViewModel {
         }
         refresh()
         displayService.fixDuplicateDisplayProfiles(displays: displays)
-        Task { await applyPersistedState() }
+        Task {
+            await settleAndRefresh()
+            enforceVirtualDisplayModes()
+            await applyPersistedState()
+        }
         registerForDisplayChanges()
         registerForSleepWake()
     }
@@ -209,6 +213,37 @@ final class DisplayManagerViewModel {
         } catch {
             logger.warning("Could not restore display mode after enable: \(error.localizedDescription)")
         }
+    }
+
+    /// macOS remembers a mode per display identity (vendor/product/serial) and
+    /// brings a virtual display up in that mode instead of the configured one
+    /// (seen live: configured 3440x1440, came up at 1720x720), and
+    /// `CGVirtualDisplay.applySettings` does not switch the mode of the main
+    /// display without a real configuration commit. So after creating or
+    /// restoring virtual displays, re-apply the configured mode through
+    /// `CGConfigureDisplayWithDisplayMode`; committed `.permanently`, it also
+    /// becomes the mode macOS remembers from then on.
+    private func enforceVirtualDisplayModes() {
+        for display in displays where display.isVirtual && display.isActive {
+            guard let config = virtualService.config(for: display.id) else { continue }
+            let current = display.currentMode
+            if current.width == config.width && current.height == config.height && current.isHiDPI == config.hiDPI {
+                continue
+            }
+            guard let wanted = display.availableModes.first(where: {
+                $0.width == config.width && $0.height == config.height && $0.isHiDPI == config.hiDPI
+            }) else {
+                logger.warning("Virtual display '\(display.name)' offers no \(config.width)x\(config.height)\(config.hiDPI ? " HiDPI" : "") mode to enforce")
+                continue
+            }
+            do {
+                try displayService.setDisplayMode(wanted, for: display.id)
+                logger.info("Re-applied configured mode \(wanted.width)x\(wanted.height)\(wanted.isHiDPI ? " HiDPI" : "") on virtual display '\(display.name)' (came up as \(current.width)x\(current.height))")
+            } catch {
+                logger.warning("Could not re-apply configured mode on '\(display.name)': \(error.localizedDescription)")
+            }
+        }
+        refresh()
     }
 
     // MARK: - Resolution Change
@@ -542,8 +577,8 @@ final class DisplayManagerViewModel {
                 errorMessage = error.localizedDescription
                 return
             }
-            try? await Task.sleep(for: .milliseconds(500))
-            refresh()
+            await settleAndRefresh()
+            enforceVirtualDisplayModes()
         }
     }
 
@@ -621,8 +656,8 @@ final class DisplayManagerViewModel {
             }
 
             navigationState = .displayList
-            try? await Task.sleep(for: .milliseconds(500))
-            refresh()
+            await settleAndRefresh()
+            enforceVirtualDisplayModes()
         }
     }
 

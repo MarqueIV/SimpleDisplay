@@ -55,6 +55,12 @@ final class VirtualDisplayService {
         serialByDisplay[displayID]
     }
 
+    /// The saved config of a live virtual display.
+    func config(for displayID: CGDirectDisplayID) -> VirtualDisplayConfig? {
+        guard let configID = displayConfigMap[displayID] else { return nil }
+        return loadConfigs().first { $0.configID == configID }
+    }
+
     private func releaseSerial(for displayID: CGDirectDisplayID) {
         if let serial = serialByDisplay.removeValue(forKey: displayID) {
             usedSerials.remove(serial)
