@@ -147,7 +147,12 @@ final class DisplayService {
 
     // MARK: - Change Resolution
 
-    func setDisplayMode(_ mode: DisplayMode, for displayID: CGDirectDisplayID) throws {
+    /// `permanently` writes the whole current configuration to macOS's display
+    /// preferences, mirror sets included: a permanent commit while a display is
+    /// mirrored makes macOS re-create that mirror on its own the next time the
+    /// same set of displays shows up (seen on the test VM). Callers pass false
+    /// while any mirror is active.
+    func setDisplayMode(_ mode: DisplayMode, for displayID: CGDirectDisplayID, permanently: Bool = true) throws {
         let options = [kCGDisplayShowDuplicateLowResolutionModes: true] as CFDictionary
         guard let modes = CGDisplayCopyAllDisplayModes(displayID, options) as? [CGDisplayMode] else {
             throw DisplayError.modesUnavailable
@@ -174,7 +179,7 @@ final class DisplayService {
             throw DisplayError.configurationFailed("Configure failed: \(configureErr)")
         }
 
-        let completeErr = CGCompleteDisplayConfiguration(config, .permanently)
+        let completeErr = CGCompleteDisplayConfiguration(config, permanently ? .permanently : .forSession)
         guard completeErr == .success else {
             CGCancelDisplayConfiguration(config)
             throw DisplayError.configurationFailed("Complete failed: \(completeErr)")

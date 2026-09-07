@@ -210,11 +210,34 @@ final class DisplayManagerViewModel {
             return
         }
         guard current.currentMode != mode else { return }
+        // Match by size and scale; the exact refresh rate may not be offered any more.
+        let target = current.availableModes.first { $0 == mode }
+            ?? current.availableModes.filter { $0.width == mode.width && $0.height == mode.height && $0.isHiDPI == mode.isHiDPI }
+                .min { abs($0.refreshRate - mode.refreshRate) < abs($1.refreshRate - mode.refreshRate) }
+        guard let target else {
+            logger.warning("Cannot restore \(mode.width)x\(mode.height) on '\(current.name)': mode not offered")
+            return
+        }
         do {
-            try displayService.setDisplayMode(mode, for: current.id)
+            try displayService.setDisplayMode(target, for: current.id, permanently: canCommitPermanently)
+            logger.info("Restored mode \(target.width)x\(target.height)\(target.isHiDPI ? " HiDPI" : "") on '\(current.name)' (was \(current.currentMode.width)x\(current.currentMode.height))")
             refresh()
         } catch {
-            logger.warning("Could not restore display mode after enable: \(error.localizedDescription)")
+            logger.warning("Could not restore mode on '\(current.name)': \(error.localizedDescription)")
+        }
+    }
+
+    /// Restore a mode and check it stuck: after a mirror is dissolved the window
+    /// server applies its own remembered configuration a moment later and can
+    /// undo ours, so settle and re-apply once if needed.
+    private func restoreModeVerified(_ mode: DisplayMode, forUUID uuid: String) async {
+        restoreMode(mode, forUUID: uuid)
+        await settleAndRefresh()
+        if let now = displays.first(where: { $0.uuid == uuid && $0.isActive }),
+           now.currentMode.width != mode.width || now.currentMode.height != mode.height || now.currentMode.isHiDPI != mode.isHiDPI {
+            logger.info("Mode of '\(now.name)' reverted to \(now.currentMode.width)x\(now.currentMode.height) after settling; re-applying once")
+            restoreMode(mode, forUUID: uuid)
+            await settleAndRefresh()
         }
     }
 
@@ -242,7 +265,7 @@ final class DisplayManagerViewModel {
                 continue
             }
             do {
-                try displayService.setDisplayMode(wanted, for: display.id)
+                try displayService.setDisplayMode(wanted, for: display.id, permanently: canCommitPermanently)
                 changed = true
                 logger.info("Re-applied configured mode \(wanted.width)x\(wanted.height)\(wanted.isHiDPI ? " HiDPI" : "") on virtual display '\(display.name)' (came up as \(current.width)x\(current.height))")
             } catch {
@@ -269,7 +292,7 @@ final class DisplayManagerViewModel {
         Task {
             defer { isBusy = false; busyMessage = nil }
             do {
-                try displayService.setDisplayMode(mode, for: display.id)
+                try displayService.setDisplayMode(mode, for: display.id, permanently: canCommitPermanently)
             } catch {
                 errorMessage = error.localizedDescription
                 return
@@ -319,6 +342,13 @@ final class DisplayManagerViewModel {
     /// headless countdown guards against.
     func wouldLeaveNoVisibleDisplay(_ display: DisplayInfo) -> Bool {
         display.isActive && !display.isVirtual && !visibleDisplays.contains { $0.id != display.id }
+    }
+
+    /// Mode changes are written to macOS's display preferences only while no
+    /// mirror is active; a permanent commit would bake the mirror set into the
+    /// preferences and macOS would re-create it later by itself.
+    private var canCommitPermanently: Bool {
+        !displays.contains { $0.isMirrored }
     }
 
     func displayName(for id: CGDirectDisplayID) -> String {
@@ -518,7 +548,7 @@ final class DisplayManagerViewModel {
                 if let uuid = display.uuid { statePersistence.recordUnmirror(uuid: uuid) }
                 await settleAndRefresh()
                 // A mirror slave ran at the master's mode; give it its own back.
-                if let lastMode, let uuid = display.uuid { restoreMode(lastMode, forUUID: uuid) }
+                if let lastMode, let uuid = display.uuid { await restoreModeVerified(lastMode, forUUID: uuid) }
             } else {
                 await mirror(display, onto: nil)
             }
@@ -593,7 +623,7 @@ final class DisplayManagerViewModel {
         await settleAndRefresh()
         // Former slaves ran at their master's mode; give each its own back.
         for item in released {
-            if let lastMode = item.lastMode { restoreMode(lastMode, forUUID: item.uuid) }
+            if let lastMode = item.lastMode { await restoreModeVerified(lastMode, forUUID: item.uuid) }
         }
     }
 
@@ -937,6 +967,13 @@ final class DisplayManagerViewModel {
         await settleAndRefresh()
 
         let savedByUUID = Dictionary(uniqueKeysWithValues: saved.map { ($0.uuid, $0) })
+
+        // Mirrors we never asked for: macOS restores mirror sets from its display
+        // preferences (they get there through permanent commits made while a
+        // mirror was active). Left alone, but logged, so the trail is visible.
+        for display in displays where display.isMirrored && savedByUUID[display.uuid ?? ""]?.mirrorOf == nil {
+            logger.warning("'\(display.name)' is mirroring display \(display.mirroredToDisplayID) without a persisted choice (restored by macOS from its display preferences)")
+        }
 
         // Recovery: this Mac has no visible screen and nobody confirmed that
         // (the app quit during the countdown, or an older build persisted it).
