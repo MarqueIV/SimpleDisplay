@@ -9,6 +9,8 @@
   "no_cached_profiles": "No cached profiles found.",
   "failed_login_item": "Failed to update login item: %@",
   "website": "Website",
+  "remote_display_subtitle": "Remote desktop with virtual monitors that fit your window",
+  "remote_display_title": "Remote Display",
   "contact": "Contact",
   "footer_compat": "macOS 14+ \u2022 Apple Silicon & Intel",
   "badge_main": "Main",

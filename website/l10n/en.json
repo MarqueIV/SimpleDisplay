@@ -35,7 +35,7 @@
   "vd_title_2": "created in software",
   "vd_desc": "macOS limits resolution when no physical monitor is connected. SimpleDisplay creates virtual displays that the system treats as real screens — perfect for remote access, testing, and headless setups.",
   "vd_remote_title": "Remote access",
-  "vd_remote_desc": "Full resolution over VNC, Screen Sharing, Parsec, AnyDesk, or TeamViewer.",
+  "vd_remote_desc": "Full resolution over any remote desktop. Works best with <a href=\"https://remotedisplay.app\" style=\"color:var(--blue);text-decoration:none;\">Remote Display</a>, our remote desktop for macOS whose virtual monitors resize to your window; also with Screen Sharing, VNC, Parsec, AnyDesk or TeamViewer.",
   "vd_headless_title": "Headless Macs",
   "vd_headless_desc": "Run Mac minis and Mac Studios with no monitor attached at any resolution.",
   "vd_responsive_title": "Responsive testing",
@@ -61,7 +61,7 @@
   "auto_url_title": "URL scheme",
   "auto_url_desc": "open, create, remove, reconfigure, enable, disable (with an optional headless confirmation), mirror, unmirror, mode and status. Every value is validated before the app acts on it, and malformed URLs show a one-line banner instead of failing silently.",
   "auto_ssh_title": "Remote Macs",
-  "auto_ssh_desc": "Run the CLI over SSH to drive the SimpleDisplay running on that Mac, for example to set a resolution before connecting with Screen Sharing.",
+  "auto_ssh_desc": "Run the CLI over SSH to drive the SimpleDisplay running on that Mac, for example to set a resolution before connecting with Remote Display or Screen Sharing.",
   "auto_readme_btn": "Read the automation docs",
   "start_label": "Get started",
   "start_title": "Up and running in seconds",
@@ -89,5 +89,6 @@
   "community_source": "Source code",
   "community_issues": "Report an issue",
   "community_contribute": "Contribute",
-  "footer": "© 2026 SimpleDisplay · Licensed under <a href=\"https://github.com/SamuelRioTz/SimpleDisplay/blob/main/LICENSE\">GPL-3.0</a> · Made for macOS"
+  "community_contact": "Contact",
+  "footer": "© 2026 SimpleDisplay · Licensed under <a href=\"https://github.com/SamuelRioTz/SimpleDisplay/blob/main/LICENSE\">GPL-3.0</a> · <a href=\"mailto:info@simpledisplay.app\">info@simpledisplay.app</a> · Made for macOS"
 }

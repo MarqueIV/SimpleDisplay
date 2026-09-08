@@ -9,6 +9,8 @@
   "no_cached_profiles": "Keine zwischengespeicherten Profile gefunden.",
   "failed_login_item": "Anmeldeobjekt konnte nicht aktualisiert werden: %@",
   "website": "Webseite",
+  "remote_display_subtitle": "Remote-Desktop mit virtuellen Monitoren, die sich deinem Fenster anpassen",
+  "remote_display_title": "Remote Display",
   "contact": "Kontakt",
   "footer_compat": "macOS 14+ \u2022 Apple Silicon & Intel",
   "badge_main": "Haupt",

@@ -109,8 +109,36 @@ struct SettingsView: View {
                     }
 
                     // Contact
+                    // Companion app: the remote desktop that SimpleDisplay's virtual
+                    // displays were built for (same author, free software).
                     settingsRow {
-                        if let url = URL(string: "mailto:hello@simpledisplay.app") {
+                        if let url = URL(string: "https://remotedisplay.app") {
+                            Link(destination: url) {
+                                HStack(spacing: 10) {
+                                    settingsIcon("rectangle.connected.to.line.below", color: .teal)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(locale.t("remote_display_title"))
+                                            .font(.callout)
+                                            .foregroundStyle(.primary)
+                                        Text(locale.t("remote_display_subtitle"))
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    Spacer()
+                                    Text(verbatim: "remotedisplay.app")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.tertiary)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+
+                    settingsRow {
+                        if let url = URL(string: "mailto:info@simpledisplay.app") {
                             Link(destination: url) {
                                 HStack(spacing: 10) {
                                     settingsIcon("envelope.fill", color: .indigo)
@@ -118,7 +146,7 @@ struct SettingsView: View {
                                         .font(.callout)
                                         .foregroundStyle(.primary)
                                     Spacer()
-                                    Text(verbatim: "hello@simpledisplay.app")
+                                    Text(verbatim: "info@simpledisplay.app")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                     Image(systemName: "arrow.up.right")

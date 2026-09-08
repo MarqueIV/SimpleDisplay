@@ -112,6 +112,8 @@ an SSH session drives the remote Mac's local SimpleDisplay.
 ssh user@mac "simpledisplayctl create --width 2732 --height 2048 --name iPad"
 ```
 
+For the remote desktop itself, SimpleDisplay pairs best with [Remote Display](https://remotedisplay.app), our free remote desktop for macOS whose virtual monitors resize to your window: SimpleDisplay prepares the displays, Remote Display streams them. Screen Sharing, VNC, Parsec, AnyDesk and TeamViewer work too.
+
 If SimpleDisplay is not installed, `status` reports that before any action
 is attempted so callers can offer to install it first.
 
@@ -138,6 +140,10 @@ SimpleDisplay uses Apple's private `CGVirtualDisplay` API to create virtual moni
 - Virtual display refresh rate is capped at 60Hz (API limitation)
 - Display identification uses names, so two identical monitors may not be distinguishable in all scenarios
 - The `CGVirtualDisplay` and `CGSConfigureDisplayEnabled` APIs are undocumented and may change or be removed in future macOS versions
+
+## Contact
+
+Questions, bug reports and ideas: [info@simpledisplay.app](mailto:info@simpledisplay.app), or open an [issue](https://github.com/SamuelRioTz/SimpleDisplay/issues).
 
 ## Contributing
 

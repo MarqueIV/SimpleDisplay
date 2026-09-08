@@ -9,6 +9,8 @@
   "no_cached_profiles": "No se encontraron perfiles en caché.",
   "failed_login_item": "Error al actualizar ítem de inicio: %@",
   "website": "Sitio web",
+  "remote_display_subtitle": "Escritorio remoto con monitores virtuales que se ajustan a tu ventana",
+  "remote_display_title": "Remote Display",
   "contact": "Contacto",
   "footer_compat": "macOS 14+ \u2022 Apple Silicon e Intel",
   "badge_main": "Principal",
