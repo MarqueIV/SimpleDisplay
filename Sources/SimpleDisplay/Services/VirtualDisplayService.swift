@@ -1,4 +1,3 @@
-import ColorSync
 import CoreGraphics
 import Foundation
 import os
@@ -234,7 +233,6 @@ final class VirtualDisplayService {
         displayConfigMap[displayID] = config.configID
         serialByDisplay[displayID] = serial
 
-        assignSRGBProfile(to: displayID)
 
         if persist {
             saveConfig(config)
@@ -333,30 +331,6 @@ final class VirtualDisplayService {
 
     var activeVirtualDisplayIDs: Set<CGDirectDisplayID> {
         Set(activeDisplays.keys)
-    }
-
-    // MARK: - Color Profile
-
-    /// Pin sRGB as the display's profile. Harmless and cheap; the real fix for the
-    /// colorsyncd/displayservices CPU loop is the stable serial (see `allocateSerial`):
-    /// sRGB alone did not stop the leak when tested with random serials.
-    private func assignSRGBProfile(to displayID: CGDirectDisplayID) {
-        guard let uuid = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue() else { return }
-        guard let profileKey = kColorSyncDeviceDefaultProfileID?.takeUnretainedValue() else { return }
-        guard let deviceClass = kColorSyncDisplayDeviceClass?.takeUnretainedValue() else { return }
-
-        let srgbPath = "/System/Library/ColorSync/Profiles/sRGB Profile.icc"
-        let profileURL = URL(fileURLWithPath: srgbPath) as CFURL
-
-        let profileInfo: [CFString: Any] = [
-            profileKey: profileURL
-        ]
-
-        ColorSyncDeviceSetCustomProfiles(
-            deviceClass,
-            uuid,
-            profileInfo as CFDictionary
-        )
     }
 
     // MARK: - Persistence

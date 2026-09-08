@@ -52,8 +52,16 @@ Implementación en `Sources/SimpleDisplay/Services/VirtualDisplayService.swift`:
 - Podado: `scheduleColorSyncCleanup` (borrar el `.icc` solo obliga a regenerarlo en el
   próximo create), `unregisterColorSyncDevice` (AuthorizationCreate por XPC síncrono:
   colgaba la app y encola un diálogo de password) y `removeICCProfile` (osascript con
-  password). Se mantienen `assignSRGBProfile` (inocuo) y el botón "fix color profiles"
-  de Ajustes, como recuperación para máquinas que ya acumularon perfiles con builds viejos.
+  password). Se mantuvieron un tiempo `assignSRGBProfile` sobre cada virtual (inocuo) y el
+  botón "Clean display cache" de Ajustes (mata `colorsyncd`, borra perfiles y
+  `com.apple.windowserver.displays.plist` con contraseña de admin) como recuperación para
+  máquinas que ya habían acumulado perfiles con builds viejos. **Retirados el 2026-09-08
+  (v1.6.4)**: con la identidad estable ya no se acumula nada, y borrar el plist del
+  WindowServer resetea además la memoria de modos por conjunto de pantallas, que la app ahora
+  gestiona (ver `docs/real-disable-vm/README.md`). Quien tenga perfiles viejos acumulados
+  puede borrarlos a mano: `sudo rm /Library/ColorSync/Profiles/Displays/*.icc`. Lo que sí
+  sigue es `DisplayService.fixDuplicateDisplayProfiles` (sRGB a monitores físicos
+  **idénticos**), que ataca otro bug: el deadlock de `colorsync.useragent` de Sequoia.
 
 ## Verificación (2026-09-02, VM Tart limpia)
 
