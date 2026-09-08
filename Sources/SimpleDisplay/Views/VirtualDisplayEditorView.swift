@@ -1,25 +1,24 @@
 import SwiftUI
 
-/// Unified view for creating and editing virtual displays.
-/// Pass `editing` to edit an existing display, or nil to create a new one.
+/// Create or edit a virtual display. Pass `editing` to edit an existing one.
+/// A compact form that fits the popover without scrolling: name, a preset
+/// menu, panel size, zoom, and (when editing) the live mode.
 struct VirtualDisplayEditorView: View {
     @Environment(DisplayManagerViewModel.self) private var viewModel
     @Environment(LocaleManager.self) private var locale
 
     let editing: DisplayInfo?
+    /// Panel size and zoom the display was created with. The live mode can differ
+    /// (a zoom level picked from the row menu, or macOS's remembered mode), so
+    /// the editor starts from the saved config, not from what is on screen.
+    private let saved: VirtualDisplayService.VirtualDisplayConfig?
 
     @State private var name: String
     @State private var width: Int
     @State private var height: Int
     @State private var hiDPI: Bool
-    @State private var selectedPresetCategory: DevicePreset.PresetCategory = .tv
 
     private var isEditing: Bool { editing != nil }
-
-    /// Panel size and zoom the display was created with. The live mode can differ
-    /// (a zoom level picked from the row menu, or macOS's remembered mode), so
-    /// the editor starts from the saved config, not from what is on screen.
-    private let saved: VirtualDisplayService.VirtualDisplayConfig?
 
     init(editing: DisplayInfo? = nil, saved: VirtualDisplayService.VirtualDisplayConfig? = nil) {
         self.editing = editing
@@ -51,39 +50,26 @@ struct VirtualDisplayEditorView: View {
         hiDPI ? "\(width / 2) x \(height / 2)" : "\(width) x \(height)"
     }
 
+    /// The preset matching the current size, if any; it names the preset menu.
+    private var matchingPreset: DevicePreset? {
+        devicePresets.first { $0.width == width && $0.height == height }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            headerSection
+            header
             Divider()
-
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 12) {
-                    nameSection
-                    Divider()
-                    resolutionSection
-                    Divider()
-                    presetsSection
-                }
+            form
                 .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-
-            // Warning (edit mode only)
+                .padding(.top, 14)
+                .padding(.bottom, 10)
             if isEditing && hasChanges {
-                HStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.orange)
-                    Text(locale.t("recreate_warning"))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 6)
-                .background(.orange.opacity(0.05))
+                Text(locale.t("recreate_warning"))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 10)
             }
-
-            // Sticky bottom bar
             Divider()
             bottomBar
         }
@@ -92,20 +78,19 @@ struct VirtualDisplayEditorView: View {
     // MARK: - Header
 
     @ViewBuilder
-    private var headerSection: some View {
+    private var header: some View {
         HStack {
             Image(systemName: "rectangle.dashed")
                 .foregroundStyle(.purple)
             Text(verbatim: isEditing ? name : locale.t("new_virtual_display"))
                 .font(.headline)
+                .lineLimit(1)
             if isEditing {
                 BadgeView(text: locale.t("badge_virtual"), color: .purple)
             }
             Spacer()
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    close()
-                }
+                withAnimation(.easeInOut(duration: 0.2)) { close() }
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.secondary)
@@ -117,139 +102,98 @@ struct VirtualDisplayEditorView: View {
         .padding(.bottom, 8)
     }
 
-    // MARK: - Name
+    // MARK: - Form
 
     @ViewBuilder
-    private var nameSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(locale.t("display_name"))
-                .font(.caption).foregroundStyle(.secondary)
-            TextField(locale.t("virtual_display"), text: $name)
-                .textFieldStyle(.roundedBorder)
-        }
-    }
-
-    // MARK: - Resolution
-
-    @ViewBuilder
-    private var resolutionSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            if isEditing {
-                HStack {
-                    Text(locale.t("active"))
-                        .font(.caption).foregroundStyle(.secondary)
-                        .frame(width: 80, alignment: .leading)
-                    Spacer()
-                    Text(verbatim: editing?.currentMode.localizedResolutionString(locale) ?? "")
-                        .font(.caption).fontWeight(.medium)
+    private var form: some View {
+        Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
+            GridRow {
+                label("display_name")
+                TextField(locale.t("virtual_display"), text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .gridCellColumns(2)
+            }
+            GridRow {
+                label("preset")
+                presetMenu
+                    .gridCellColumns(2)
+            }
+            GridRow {
+                label("panel_size")
+                HStack(spacing: 6) {
+                    TextField("W", value: $width, format: .number.grouping(.never))
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 72)
+                    Text(verbatim: "×").foregroundStyle(.secondary)
+                    TextField("H", value: $height, format: .number.grouping(.never))
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 72)
+                    Text(locale.t("pixels"))
+                        .font(.caption2).foregroundStyle(.secondary)
                 }
+                .gridCellColumns(2)
             }
-
-            HStack {
-                Text(locale.t("panel_size"))
-                    .font(.caption).foregroundStyle(.secondary)
-                    .frame(width: 80, alignment: .leading)
-                TextField("W", value: $width, format: .number.grouping(.never))
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 75)
-                Text(verbatim: "x").foregroundStyle(.secondary)
-                TextField("H", value: $height, format: .number.grouping(.never))
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 75)
-                Text(locale.t("pixels"))
-                    .font(.caption2).foregroundStyle(.secondary)
-                Spacer()
-            }
-
-            HStack {
-                Text(locale.t("zoom"))
-                    .font(.caption).foregroundStyle(.secondary)
-                    .frame(width: 80, alignment: .leading)
+            GridRow {
+                label("zoom")
                 Picker("", selection: $hiDPI) {
                     Text(locale.t("zoom_1x")).tag(false)
                     Text(locale.t("zoom_2x")).tag(true)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(width: 170)
-                Spacer()
+                .frame(width: 160)
                 Text(verbatim: locale.t("looks_like_format", looksLike))
                     .font(.caption2).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
-
-            if isEditing {
-                Text(locale.t("zoom_hint"))
-                    .font(.caption2).foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    // MARK: - Presets
-
-    @ViewBuilder
-    private var presetsSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(locale.t("device_presets"))
-                .font(.caption).foregroundStyle(.secondary)
-
-            HStack(spacing: 4) {
-                ForEach(DevicePreset.PresetCategory.allCases, id: \.self) { cat in
-                    presetTab(cat)
+            if let d = editing {
+                GridRow {
+                    label("active")
+                    Text(verbatim: d.currentMode.localizedResolutionString(locale))
+                        .font(.caption).foregroundStyle(.secondary)
+                        .gridCellColumns(2)
                 }
             }
+        }
+    }
 
-            let filtered = devicePresets.filter { $0.category == selectedPresetCategory }
-            VStack(spacing: 0) {
-                ForEach(filtered) { preset in
-                    presetRow(preset)
+    private func label(_ key: String) -> some View {
+        Text(locale.t(key))
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .frame(width: 76, alignment: .leading)
+    }
+
+    /// Device presets as one popup button, grouped by family. Picking one fills
+    /// the panel size and, unless the display already has a custom name, the name.
+    @ViewBuilder
+    private var presetMenu: some View {
+        Picker("", selection: Binding<UUID?>(
+            get: { matchingPreset?.id },
+            set: { id in
+                if let preset = devicePresets.first(where: { $0.id == id }) { apply(preset) }
+            }
+        )) {
+            Text(locale.t("preset_custom")).tag(UUID?.none)
+            ForEach(DevicePreset.PresetCategory.allCases, id: \.self) { cat in
+                Section(cat.localizedName(locale)) {
+                    ForEach(devicePresets.filter { $0.category == cat }) { preset in
+                        Text(verbatim: "\(preset.name)  ·  \(preset.dimensionString)")
+                            .tag(Optional(preset.id))
+                    }
                 }
             }
-            .clipShape(RoundedRectangle(cornerRadius: 6))
-            .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.5))
-            )
         }
+        .pickerStyle(.menu)
+        .labelsHidden()
+        .frame(maxWidth: 260, alignment: .leading)
     }
 
-    @ViewBuilder
-    private func presetTab(_ cat: DevicePreset.PresetCategory) -> some View {
-        if selectedPresetCategory == cat {
-            Button { selectedPresetCategory = cat } label: {
-                Text(verbatim: cat.localizedName(locale)).font(.caption2)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-            }
-            .buttonStyle(.borderedProminent).controlSize(.small).tint(.purple)
-        } else {
-            Button { selectedPresetCategory = cat } label: {
-                Text(verbatim: cat.localizedName(locale)).font(.caption2)
-                    .padding(.horizontal, 8).padding(.vertical, 4)
-            }
-            .buttonStyle(.bordered).controlSize(.small).tint(.gray)
-        }
-    }
-
-    @ViewBuilder
-    private func presetRow(_ preset: DevicePreset) -> some View {
-        let isActive = width == preset.width && height == preset.height
-        Button {
-            width = preset.width
-            height = preset.height
-            name = preset.name
-        } label: {
-            HStack {
-                Text(verbatim: preset.name).font(.caption)
-                    .foregroundStyle(isActive ? .purple : .primary)
-                Spacer()
-                Text(verbatim: preset.dimensionString)
-                    .font(.caption2).foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(isActive ? Color.purple.opacity(0.08) : Color.clear)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
+    private func apply(_ preset: DevicePreset) {
+        let nameIsGeneric = !isEditing || name == "Virtual Display" || devicePresets.contains { $0.name == name }
+        width = preset.width
+        height = preset.height
+        if nameIsGeneric { name = preset.name }
     }
 
     // MARK: - Bottom Bar
@@ -257,39 +201,34 @@ struct VirtualDisplayEditorView: View {
     @ViewBuilder
     private var bottomBar: some View {
         HStack(spacing: 8) {
-            if isEditing {
-                // Set as Main
-                if let d = editing, !d.isMain, d.isActive {
+            if let d = editing {
+                Button(role: .destructive) {
+                    viewModel.removeVirtualDisplay(d)
+                    viewModel.navigate(to: .displayList)
+                } label: {
+                    Image(systemName: "trash").font(.caption2)
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
+                .help(locale.t("remove"))
+                .disabled(viewModel.isBusy)
+
+                if !d.isMain, d.isActive {
                     Button {
                         viewModel.setAsMainDisplay(d)
                     } label: {
                         Image(systemName: "star.fill").font(.caption2)
                     }
                     .buttonStyle(.bordered)
+                    .help(locale.t("badge_set_main"))
                     .disabled(viewModel.isBusy)
                 }
 
-                // Remove
-                Button(role: .destructive) {
-                    if let d = editing {
-                        viewModel.removeVirtualDisplay(d)
-                        viewModel.navigate(to: .displayList)
-                    }
-                } label: {
-                    Image(systemName: "trash").font(.caption2)
-                }
-                .buttonStyle(.bordered)
-                .tint(.red)
-                .disabled(viewModel.isBusy)
-
-                // Apply
                 Button {
-                    if let d = editing {
-                        viewModel.reconfigureVirtualDisplay(
-                            d, width: width, height: height,
-                            hiDPI: hiDPI, name: name
-                        )
-                    }
+                    viewModel.reconfigureVirtualDisplay(
+                        d, width: width, height: height,
+                        hiDPI: hiDPI, name: name
+                    )
                 } label: {
                     Text(verbatim: locale.t("apply_format", width, height))
                         .font(.caption).fontWeight(.medium)
@@ -301,9 +240,7 @@ struct VirtualDisplayEditorView: View {
                 .disabled(!hasChanges || viewModel.isBusy)
             } else {
                 Button(locale.t("cancel")) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        close()
-                    }
+                    withAnimation(.easeInOut(duration: 0.2)) { close() }
                 }
 
                 Button {
