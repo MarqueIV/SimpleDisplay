@@ -145,6 +145,10 @@ SimpleDisplay uses Apple's private `CGVirtualDisplay` API to create virtual moni
 
 Questions, bug reports and ideas: [info@simpledisplay.app](mailto:info@simpledisplay.app), or open an [issue](https://github.com/SamuelRioTz/SimpleDisplay/issues).
 
+## Support
+
+SimpleDisplay is free and open source. If it saves you time, you can [buy me a coffee on Ko-fi](https://ko-fi.com/samuelriotz). It helps cover the Apple developer account and the hardware used for testing.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions and guidelines.
